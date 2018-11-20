@@ -338,6 +338,9 @@ public class FontService extends Service {
                 .setSmallIcon(R.mipmap.ic_launcher) // 设置状态栏内的小图标
                 .setContentText("群控系统") // 设置上下文内容
                 .setWhen(System.currentTimeMillis()); // 设置该通知发生的时间
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            builder.setChannelId(BuildConfig.APPLICATION_ID);
+        }
 
         Notification notification = builder.build(); // 获取构建好的Notification
         notification.defaults = Notification.DEFAULT_SOUND; //设置为默认的声音

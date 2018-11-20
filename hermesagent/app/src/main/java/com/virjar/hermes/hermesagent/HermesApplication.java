@@ -1,8 +1,13 @@
 package com.virjar.hermes.hermesagent;
 
 import android.app.Application;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -36,6 +41,24 @@ public class HermesApplication extends Application {
             log.error("component startup failed");
         }
         //rebootIfXposedStartupFailed();
+        setNotifyChannel();
+    }
+
+    private void setNotifyChannel() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return;
+        }
+        NotificationChannel notificationChannel = new NotificationChannel(BuildConfig.APPLICATION_ID,
+                "channel", NotificationManager.IMPORTANCE_HIGH);
+        notificationChannel.enableLights(true);
+        notificationChannel.setLightColor(Color.YELLOW);
+        notificationChannel.setShowBadge(true);
+        notificationChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+        NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (manager == null) {
+            return;
+        }
+        manager.createNotificationChannel(notificationChannel);
     }
 
     //实践发现，这一招没有效果。。。
