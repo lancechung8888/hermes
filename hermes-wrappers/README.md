@@ -1,0 +1,3 @@
+# hermes-wrapper
+在hermes系统中，有一个wrapper的概念，wrapper是我们书写的和app桥接层的代码。    
+在Hermes中，各个app的破解逻辑隔离，每个app的抓取逻辑通过一个wrapper描述。wrapper需要编译成独立的apk，然后上传的HermesAdmin。在HermesAdmin的管理下，将会把wrapperAPK下发到设备手机上面。并由HermesAgent驱动wrapper到目标app的注入
