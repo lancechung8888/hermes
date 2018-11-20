@@ -188,7 +188,7 @@ public class HermesWrapperApkController {
     @GetMapping("/usedWrapper")
     @ApiOperation(value = "查询某个服务,正在使用的wrapper")
     @ResponseBody
-    public CommonRes<HermesWrapperApk> userdWrapper(@RequestParam("targetAppPackage") String appPackage) {
+    public CommonRes<HermesWrapperApk> userdWrapper(@RequestParam("targetPackage") String appPackage) {
         return ReturnUtil.success(hermesWrapperApkService.getOne(new QueryWrapper<HermesWrapperApk>()
                 .eq("apk_package", appPackage)
                 .eq("enabled", true)));
