@@ -1,0 +1,30 @@
+#android stutio && gradle
+build/
+.gradle/
+local.properties
+
+# system ignore
+.DS_Store
+Thumbs.db
+
+# eclipse ignore
+.settings/
+.project
+.classpath
+
+# idea ignore
+.idea/
+*.ipr
+*.iml
+*.iws
+
+
+# temp ignore
+*.log
+*.cache
+*.diff
+*.patch
+*.tmp
+
+# apk ignore
+*.apk
