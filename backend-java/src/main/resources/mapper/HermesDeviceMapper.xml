@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.virjar.hermesadmin.mapper.HermesDeviceMapper">
+
+    <select id="selectForConfiguredPackage" resultType="com.virjar.hermesadmin.entity.HermesDevice">
+      SELECT * FROM hermes_device WHERE mac  IN (
+        SELECT device_mac FROM hermes_device_service where app_package = #{appPackage}
+      )
+    </select>
+    <select id="availableDeviceForPackage" resultType="com.virjar.hermesadmin.entity.HermesDevice">
+         SELECT * FROM hermes_device WHERE mac NOT  IN (
+        SELECT device_mac FROM hermes_device_service where app_package = #{appPackage}
+      )
+    </select>
+    <select id="findAvailableForPackage" resultType="com.virjar.hermesadmin.entity.HermesDevice">
+        SELECT  * FROM hermes_device WHERE  mac NOT IN (
+           SELECT device_mac FROM hermes_device_service where app_package = #{appPackage} and status=true
+        ) limit 1024
+    </select>
+</mapper>
