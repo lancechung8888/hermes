@@ -109,7 +109,9 @@ public class AgentWatchTask extends LoggerTimerTask {
         for (Map.Entry<String, IHookAgentService> entry : allRemoteHookService.entrySet()) {
             AgentInfo agentInfo = handleAgentHeartBeat(entry.getKey(), entry.getValue());
             if (agentInfo != null) {
-                if (agentInfo.getVersionCode() > 0 && watchServiceMap.get(agentInfo.getPackageName()).getWrapperVersionCode()
+                if (agentInfo.getVersionCode() > 0
+                        && watchServiceMap.containsKey(agentInfo.getPackageName())
+                        && watchServiceMap.get(agentInfo.getPackageName()).getWrapperVersionCode()
                         != agentInfo.getVersionCode()) {
                     log.info("the wrapper version update,need reinstall wrapper:{}", agentInfo.getPackageName());
                     needCheckWrapperApps.add(watchServiceMap.get(agentInfo.getPackageName()));
