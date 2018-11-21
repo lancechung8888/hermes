@@ -52,7 +52,7 @@ public abstract class MultiActionWrapper extends ExternalWrapperAdapter {
         }
 
         AsyncResult asyncResult = (AsyncResult) handlerResult;
-        asyncResult.waitCallback();
+        asyncResult.waitCallback(waitTimeout());
         if (!asyncResult.isCallbackCalled()) {
             return InvokeResult.failed("Request TimeOut");
         }
@@ -64,29 +64,33 @@ public abstract class MultiActionWrapper extends ExternalWrapperAdapter {
         requestHandlerMap.put(action, requestHandler);
     }
 
+    protected long waitTimeout() {
+        return 6500L;
+    }
+
     private Map<String, RequestHandler> requestHandlerMap = Maps.newHashMap();
 
     protected interface RequestHandler {
         Object handleRequest(InvokeRequest invokeRequest);
     }
 
-    protected abstract class AsyncResult {
+    public class AsyncResult {
         private Object data;
         private boolean callbackCalled = false;
         private final Object lock = new Object();
 
-        AsyncResult waitCallback() {
+
+        void waitCallback(long timeOUt) {
             if (callbackCalled) {
-                return this;
+                return;
             }
             synchronized (lock) {
                 try {
-                    lock.wait(65000);
+                    lock.wait(timeOUt);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
-            return this;
         }
 
         public void notifyDataArrival(Object responseData) {
