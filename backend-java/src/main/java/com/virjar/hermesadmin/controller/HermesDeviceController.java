@@ -50,7 +50,7 @@ public class HermesDeviceController {
         return ReturnUtil.returnPage(hermesDeviceService.selectForConfiguredPackage(pageWrapper, appPackage), pageable);
     }
 
-    @GetMapping("listAvailableDevices")
+    @GetMapping("listAvailableDevice")
     @ApiOperation(value = "查询当前app可用的设备资源")
     @ResponseBody
     public CommonRes<Page<HermesDevice>> listAvailable(@PageableDefault Pageable pageable, @RequestParam(value = "appPackage") String appPackage) {
