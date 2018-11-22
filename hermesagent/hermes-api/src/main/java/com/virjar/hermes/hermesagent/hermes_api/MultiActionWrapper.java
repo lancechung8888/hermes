@@ -108,6 +108,21 @@ public abstract class MultiActionWrapper extends ExternalWrapperAdapter {
         Object handleRequest(InvokeRequest invokeRequest);
     }
 
+
+    /**
+     * 方便链式
+     */
+    public abstract class AsyncResultBuilder {
+        private AsyncResult asyncResult = new AsyncResult();
+
+        public abstract void bind(AsyncResult asyncResult);
+
+        public AsyncResult build() {
+            bind(asyncResult);
+            return asyncResult;
+        }
+    }
+
     /**
      * 如果返回值是这个类型，那么证明结果是异步的，我将会等待异步结果返回
      */
