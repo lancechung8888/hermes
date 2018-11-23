@@ -21,6 +21,7 @@ import com.virjar.hermes.hermesagent.hermes_api.Constant;
 import com.virjar.hermes.hermesagent.hermes_api.EmbedWrapper;
 import com.virjar.hermes.hermesagent.hermes_api.LogConfigurator;
 import com.virjar.hermes.hermesagent.hermes_api.MultiActionWrapper;
+import com.virjar.hermes.hermesagent.hermes_api.MultiActionWrapperFactory;
 import com.virjar.hermes.hermesagent.hermes_api.WrapperAction;
 import com.virjar.hermes.hermesagent.host.manager.AgentDaemonTask;
 import com.virjar.hermes.hermesagent.util.CommonUtils;
@@ -257,7 +258,7 @@ public class HotLoadPackageEntry {
                     continue;
                 }
                 //scan action and wrap if if there is no wrapper defined in apk
-                MultiActionWrapper wrapperByAction = createWrapperByAction(packageName, apkFilePath);
+                MultiActionWrapper wrapperByAction = MultiActionWrapperFactory.createWrapperByAction(packageName, apkFilePath);
                 if (wrapperByAction != null) {
                     ret.add(new ExternalWrapper(wrapperByAction, SharedObject.loadPackageParam.packageName, apkFile.getApkMeta().getVersionCode()));
                 }
@@ -268,47 +269,6 @@ public class HotLoadPackageEntry {
         return ret;
     }
 
-    private static MultiActionWrapper createWrapperByAction(String packageName, File apkFilePath) {
-        ClassScanner.AnnotationClassVisitor annotationClassVisitor = new ClassScanner.AnnotationClassVisitor(WrapperAction.class);
-        ClassScanner.scan(annotationClassVisitor, Sets.newHashSet(packageName), apkFilePath);
-        ArrayList<ActionRequestHandler> actionRequestHandlers = Lists.newArrayList(Iterables.filter(Iterables.transform(Iterables.filter(annotationClassVisitor.getClassSet(), new Predicate<Class>() {
-            @Override
-            public boolean apply(@Nullable Class input) {
-                if (input == null) {
-                    return false;
-                }
-                WrapperAction wrapperAction = (WrapperAction) input.getAnnotation(WrapperAction.class);
-                return !StringUtils.isBlank(wrapperAction.value()) && ActionRequestHandler.class.isAssignableFrom(input);
-            }
-        }), new Function<Class, ActionRequestHandler>() {
-            @Nullable
-            @Override
-            public ActionRequestHandler apply(@Nullable Class input) {
-                if (input == null) {
-                    return null;
-                }
-                try {
-                    return (ActionRequestHandler) input.newInstance();
-                } catch (Exception e) {
-                    Log.w("weijia", "failed to load create plugin", e);
-                    return null;
-                }
-            }
-        }), new Predicate<ActionRequestHandler>() {
-            @Override
-            public boolean apply(@Nullable ActionRequestHandler input) {
-                return input != null;
-            }
-        }));
-        if (actionRequestHandlers.size() == 0) {
-            return null;
-        }
-        MultiActionWrapper multiActionWrapper = new MultiActionWrapper();
-        for (ActionRequestHandler actionRequestHandler : actionRequestHandlers) {
-            multiActionWrapper.registryHandler(actionRequestHandler.getClass().getAnnotation(WrapperAction.class).value(), actionRequestHandler);
-        }
-        return multiActionWrapper;
-    }
 
     private static List<EmbedWrapper> transform(List<Class<? extends AgentCallback>> classList, final long versionCode) {
         return Lists.newArrayList(Iterables.filter(Iterables.transform(classList, new Function<Class<? extends AgentCallback>, EmbedWrapper>() {

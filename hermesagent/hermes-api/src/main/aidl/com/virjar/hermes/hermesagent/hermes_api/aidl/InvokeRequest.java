@@ -123,14 +123,50 @@ public class InvokeRequest implements Parcelable {
     private Multimap nameValuePairsModel;
     private JSONObject jsonModel;
 
-
     public String getString(String name) {
+        return getString(name, null);
+    }
+
+    public String getString(String name, String defaultValue) {
         initInnerModel();
         if (nameValuePairsModel != null) {
-            return nameValuePairsModel.getString(name);
+            String ret = nameValuePairsModel.getString(name);
+            return ret == null ? defaultValue : ret;
         }
         if (jsonModel != null) {
-            return jsonModel.getString(name);
+            String ret = jsonModel.getString(name);
+            return ret == null ? defaultValue : ret;
+        }
+        throw new IllegalStateException("parameter parse failed");
+    }
+
+    public int getInt(String name) {
+        return getInt(name, 0);
+    }
+
+    public int getInt(String name, int defaultValue) {
+        initInnerModel();
+        if (nameValuePairsModel != null) {
+            String value = nameValuePairsModel.getString(name);
+            if (value == null || value.trim().isEmpty()) {
+                return defaultValue;
+            }
+            try {
+                return Integer.parseInt(value);
+            } catch (NumberFormatException e) {
+                return defaultValue;
+            }
+        }
+        if (jsonModel != null) {
+            try {
+                Integer value = jsonModel.getInteger(name);
+                if (value == null) {
+                    return defaultValue;
+                }
+                return value;
+            } catch (JSONException e) {
+                return defaultValue;
+            }
         }
         throw new IllegalStateException("parameter parse failed");
     }
