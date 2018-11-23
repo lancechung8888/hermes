@@ -23,17 +23,8 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 
 public class APICommonUtils {
-    private static final Logger log;
-    private static AtomicLong fileSequence = new AtomicLong(1);
 
-    static {
-        if (Process.myPid() < Process.FIRST_APPLICATION_UID) {
-            Log.w("weijia", "you a use slf4j for system app, some bad things maybe occur,so i will redirect to logcat");
-            log = new LogCatLogger();
-        } else {
-            log = LoggerFactory.getLogger(Constant.hermesWrapperLogTag);
-        }
-    }
+    private static AtomicLong fileSequence = new AtomicLong(1);
 
     public static File genTempFile(Context context) {
         File cacheDir = context.getCacheDir();
@@ -62,30 +53,31 @@ public class APICommonUtils {
         }
     }
 
-
+    @Deprecated
     public static void requestLogI(InvokeRequest invokeRequest, String msg) {
-        log.info(buildMessageBody(invokeRequest, msg));
+        WrapperLog.requestLogI(invokeRequest, msg);
     }
 
+    @Deprecated
     public static void requestLogW(InvokeRequest invokeRequest, String msg, Throwable throwable) {
-        log.warn(buildMessageBody(invokeRequest, msg), throwable);
+        WrapperLog.requestLogW(invokeRequest, msg, throwable);
     }
 
+    @Deprecated
     public static void requestLogW(InvokeRequest invokeRequest, String msg) {
-        log.warn(buildMessageBody(invokeRequest, msg));
+        WrapperLog.requestLogW(invokeRequest, msg);
     }
 
+    @Deprecated
     public static void requestLogE(InvokeRequest invokeRequest, String msg, Throwable throwable) {
-        log.error(buildMessageBody(invokeRequest, msg), throwable);
+        WrapperLog.requestLogE(invokeRequest, msg, throwable);
     }
 
+    @Deprecated
     public static void requestLogE(InvokeRequest invokeRequest, String msg) {
-        log.error(buildMessageBody(invokeRequest, msg));
+        WrapperLog.requestLogE(invokeRequest, msg);
     }
 
-    private static String buildMessageBody(InvokeRequest invokeRequest, String msg) {
-        return invokeRequest.getRequestID() + " " + DateTime.now().toString("yyyy-MM-dd hh:mm:ss") + " " + msg;
-    }
 
     public static String safeToString(Object input) {
         if (input == null) {
@@ -122,7 +114,7 @@ public class APICommonUtils {
                 }
             }
         } catch (Exception e) {
-            log.warn("query local ip failed", e);
+            WrapperLog.getWrapperLogger().warn("query local ip failed", e);
         }
 
 

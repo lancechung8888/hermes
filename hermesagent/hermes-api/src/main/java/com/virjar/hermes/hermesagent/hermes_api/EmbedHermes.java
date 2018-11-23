@@ -11,13 +11,10 @@ import com.koushikdutta.async.http.server.HttpServerRequestCallback;
 import com.virjar.xposed_extention.ReflectUtil;
 import com.virjar.xposed_extention.SharedObject;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.regex.Pattern;
 
-import de.robv.android.xposed.XposedBridge;
-import de.robv.android.xposed.XposedHelpers;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -29,9 +26,19 @@ public class EmbedHermes {
     private static AgentCallback agentCallback = null;
     private static int serverPort = 0;
 
+    static {
+        if (SharedObject.context == null) {
+            try {
+                //try to configure log component
+                LogConfigurator.configure(SharedObject.context);
+            } catch (Throwable throwable) {
+                //ignore
+            }
+        }
+    }
 
     public static void bootstrap(String basePackage, Class loader) {
-        bootstrap(MultiActionWrapperFactory.createWrapperByAction(basePackage, bindApkLocation(loader.getClassLoader())));
+        bootstrap(MultiActionWrapperFactory.createWrapperByAction(basePackage, loader.getClassLoader()));
     }
 
     public static void bootstrap(AgentCallback agentCallback) {
@@ -126,37 +133,5 @@ public class EmbedHermes {
 
     private static String localServerBaseURL() {
         return "http://" + APICommonUtils.getLocalIp() + ":" + serverPort;
-    }
-
-    private static File bindApkLocation(ClassLoader pathClassLoader) {
-        // 不能使用getResourceAsStream，这是因为classloader双亲委派的影响
-//        InputStream stream = pathClassLoader.getResourceAsStream(ANDROID_MANIFEST_FILENAME);
-//        if (stream == null) {
-//            XposedBridge.log("can not find AndroidManifest.xml in classloader");
-//            return null;
-//        }
-
-        // we can`t call package parser in android inner api,parse logic implemented with native code
-        //this object is dalvik.system.DexPathList,android inner api
-        Object pathList = XposedHelpers.getObjectField(pathClassLoader, "pathList");
-        if (pathList == null) {
-            XposedBridge.log("can not find pathList in pathClassLoader");
-            return null;
-        }
-
-        //this object is  dalvik.system.DexPathList.Element[]
-        Object[] dexElements = (Object[]) XposedHelpers.getObjectField(pathList, "dexElements");
-        if (dexElements == null || dexElements.length == 0) {
-            XposedBridge.log("can not find dexElements in pathList");
-            return null;
-        }
-
-        return (File) XposedHelpers.getObjectField(dexElements[0], "zip");
-        // Object dexElement = dexElements[0];
-
-        // /data/app/com.virjar.xposedhooktool/base.apk
-        // /data/app/com.virjar.xposedhooktool-1/base.apk
-        // /data/app/com.virjar.xposedhooktool-2/base.apk
-        // return (File) XposedHelpers.getObjectField(dexElement, "zip");
     }
 }

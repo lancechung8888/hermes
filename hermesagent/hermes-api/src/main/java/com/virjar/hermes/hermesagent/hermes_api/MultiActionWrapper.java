@@ -61,10 +61,16 @@ public class MultiActionWrapper extends ExternalWrapperAdapter {
             return InvokeResult.failed("unknown action: " + action);
         }
         Object handlerResult = requestHandler.handleRequest(invokeRequest);
+
+        if (handlerResult instanceof AsyncResult.AsyncResultBuilder) {
+            handlerResult = ((AsyncResult.AsyncResultBuilder) handlerResult).build();
+        }
+
         InvokeResult result = tryWrap(invokeRequest, handlerResult);
         if (result != null) {
             return result;
         }
+
         AsyncResult asyncResult = (AsyncResult) handlerResult;
         asyncResult.waitCallback(waitTimeout());
         if (!asyncResult.isCallbackCalled()) {
