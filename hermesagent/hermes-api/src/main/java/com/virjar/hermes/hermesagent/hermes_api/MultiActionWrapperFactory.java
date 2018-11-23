@@ -10,6 +10,7 @@ import com.google.common.collect.Sets;
 import com.virjar.xposed_extention.ClassScanner;
 
 import java.io.File;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 
 import javax.annotation.Nullable;
@@ -22,6 +23,9 @@ public class MultiActionWrapperFactory {
             @Override
             public boolean apply(@Nullable Class input) {
                 if (input == null) {
+                    return false;
+                }
+                if (Modifier.isAbstract(input.getModifiers()) || input.isInterface()) {
                     return false;
                 }
                 WrapperAction wrapperAction = (WrapperAction) input.getAnnotation(WrapperAction.class);
