@@ -22,7 +22,6 @@ import com.virjar.hermes.hermesagent.hermes_api.EmbedWrapper;
 import com.virjar.hermes.hermesagent.hermes_api.LogConfigurator;
 import com.virjar.hermes.hermesagent.hermes_api.MultiActionWrapper;
 import com.virjar.hermes.hermesagent.hermes_api.MultiActionWrapperFactory;
-import com.virjar.hermes.hermesagent.hermes_api.WrapperAction;
 import com.virjar.hermes.hermesagent.host.manager.AgentDaemonTask;
 import com.virjar.hermes.hermesagent.util.CommonUtils;
 import com.virjar.xposed_extention.ClassScanner;
@@ -40,8 +39,6 @@ import org.w3c.dom.NodeList;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.lang.annotation.Annotation;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -253,7 +250,26 @@ public class HotLoadPackageEntry {
                 ClassScanner.SubClassVisitor<AgentCallback> subClassVisitor = new ClassScanner.SubClassVisitor(true, AgentCallback.class);
                 ClassScanner.scan(subClassVisitor, Sets.newHashSet(packageName), apkFilePath);
                 List<EmbedWrapper> transform = transform(subClassVisitor.getSubClass(), apkFile.getApkMeta().getVersionCode());
+                List<ActionRequestHandler> requestHandlers = null;
                 if (transform.size() > 0) {
+                    for (EmbedWrapper embedWrapper : transform) {
+                        if (embedWrapper instanceof ExternalWrapper && ((ExternalWrapper) embedWrapper).getDelegate() instanceof MultiActionWrapper) {
+                            MultiActionWrapper multiActionWrapper = (MultiActionWrapper) ((ExternalWrapper) embedWrapper).getDelegate();
+                            if (requestHandlers == null) {
+                                requestHandlers = MultiActionWrapperFactory.scanActionWrappers(packageName, apkFilePath);
+                            }
+                            if (requestHandlers.size() == 0) {
+                                break;
+                            }
+                            for (ActionRequestHandler actionRequestHandler : requestHandlers) {
+                                try {
+                                    multiActionWrapper.registryHandler(actionRequestHandler);
+                                } catch (Exception e) {
+                                    //ignore
+                                }
+                            }
+                        }
+                    }
                     ret.addAll(transform);
                     continue;
                 }

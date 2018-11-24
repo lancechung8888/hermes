@@ -98,6 +98,10 @@ public class MultiActionWrapper extends ExternalWrapperAdapter {
     }
 
 
+    public void registryHandler(ActionRequestHandler requestHandler) {
+        registryHandler(MultiActionWrapperFactory.resolveAction(requestHandler), requestHandler);
+    }
+
     public void registryHandler(String action, ActionRequestHandler requestHandler) {
         Preconditions.checkNotNull(action);
         action = actionCaseIgnore() ? action.toLowerCase() : action;

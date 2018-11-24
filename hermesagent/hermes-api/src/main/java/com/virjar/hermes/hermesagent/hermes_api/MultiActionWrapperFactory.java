@@ -126,7 +126,7 @@ public class MultiActionWrapperFactory {
         return createWrapperByAction(packageName, bindApkLocation(loader));
     }
 
-    private static String resolveAction(ActionRequestHandler actionRequestHandler) {
+    public static String resolveAction(ActionRequestHandler actionRequestHandler) {
         return actionRequestHandler.getClass().getAnnotation(WrapperAction.class).value();
     }
 

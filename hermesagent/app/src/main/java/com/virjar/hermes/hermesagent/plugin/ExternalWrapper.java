@@ -54,4 +54,8 @@ public class ExternalWrapper implements EmbedWrapper {
     long wrapperVersionCode() {
         return versionCode;
     }
+
+    public AgentCallback getDelegate() {
+        return delegate;
+    }
 }
