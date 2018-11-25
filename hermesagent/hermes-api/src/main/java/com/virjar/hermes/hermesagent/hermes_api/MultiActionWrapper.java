@@ -87,7 +87,7 @@ public class MultiActionWrapper extends ExternalWrapperAdapter {
             return (InvokeResult) handlerResult;
         }
         if (handlerResult instanceof Throwable) {
-            APICommonUtils.requestLogE(invokeRequest, "handler throw an exception", (Throwable) handlerResult);
+            WrapperLog.requestLogE(invokeRequest, "handler throw an exception", (Throwable) handlerResult);
             return InvokeResult.failed(APICommonUtils.translateSimpleExceptionMessage((Throwable) handlerResult));
         }
 

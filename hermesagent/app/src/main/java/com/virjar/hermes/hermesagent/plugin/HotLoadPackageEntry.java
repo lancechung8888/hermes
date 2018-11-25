@@ -25,7 +25,6 @@ import com.virjar.hermes.hermesagent.hermes_api.MultiActionWrapperFactory;
 import com.virjar.hermes.hermesagent.host.manager.AgentDaemonTask;
 import com.virjar.hermes.hermesagent.util.CommonUtils;
 import com.virjar.xposed_extention.ClassScanner;
-import com.virjar.xposed_extention.Ones;
 import com.virjar.xposed_extention.SharedObject;
 import com.virjar.xposed_extention.XposedExtensionInstaller;
 
@@ -39,7 +38,7 @@ import org.w3c.dom.NodeList;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -82,53 +81,44 @@ public class HotLoadPackageEntry {
         }
         //安装在容器中的扩展代码，优先级比内嵌的模块高
         Log.i("weijia", "scan external wrapper implementation");
-        allCallBack = findExternalCallBack();
-        Log.i("weijia", "find :{" + allCallBack.size() + "} external wrapper");
-        for (EmbedWrapper agentCallback : allCallBack) {
-            AgentCallback old = callbackMap.put(agentCallback.targetPackageName(), agentCallback);
+        ExternalWrapper externalCallBack = findExternalCallBack();
+        if (externalCallBack != null) {
+            AgentCallback old = callbackMap.put(externalCallBack.targetPackageName(), externalCallBack);
             if (old != null) {
-                Log.i("weijia", "duplicate hermes wrapper found , hermes agent only load single one hermes wrapper");
+                Log.i("weijia", "find a external wrapper and embed wrapper, embed wrapper will replaced by external wrapper");
             }
         }
 
-        for (EmbedWrapper agentCallback : callbackMap.values()) {
-            if (agentCallback == null) {
-                continue;
+        if (callbackMap.isEmpty()) {
+            return;
+        }
+        if (callbackMap.size() != 1) {
+            Log.e("weijia", "multi wrapper found,hermes agent can only load one hermes wrapper");
+            return;
+        }
+        EmbedWrapper wrapper = callbackMap.values().iterator().next();
+        try {
+            setupInternalComponent();
+            String wrapperName;
+            if (wrapper instanceof ExternalWrapper) {
+                wrapperName = ((ExternalWrapper) wrapper).wrapperClassName();
+            } else {
+                wrapperName = wrapper.getClass().getName();
             }
-            try {
-                Ones.hookOnes(HotLoadPackageEntry.class, "setupInternalComponent", new Ones.DoOnce() {
-                    @Override
-                    public void doOne(Class<?> clazz) {
-                        setupInternalComponent();
-                    }
-                });
-                String wrapperName;
-                if (agentCallback instanceof ExternalWrapper) {
-                    wrapperName = ((ExternalWrapper) agentCallback).wrapperClassName();
-                } else {
-                    wrapperName = agentCallback.getClass().getName();
-                }
-                log.info("执行回调: {}", wrapperName);
-                //挂载钩子函数
-                agentCallback.onXposedHotLoad();
-                //将agent注册到server端，让server可以rpc到agent
-                log.info("注册:{} 到hermes server registry", wrapperName);
-                AgentRegister.registerToServer(agentCallback, context);
-                //启动timer，保持和server的心跳，发现server死掉的话，拉起server
-                log.info("启动到server 心跳保持timer");
-                SharedObject.agentTimer.scheduleAtFixedRate(new AgentDaemonTask(context, agentCallback), 1000, 4000);
-
-                Ones.hookOnes(HotLoadPackageEntry.class, "registerExitByHermesInstallHook", new Ones.DoOnce() {
-                    @Override
-                    public void doOne(Class<?> clazz) {
-                        //在hermesAgent（master重新安装的时候，程序自身自杀，这是因为hermesAgent作为框架代码注入到本程序，
-                        //hermesAgent重新安装可能意味着框架逻辑发生了更新，新版的交互协议可能和当前app中植入的框架代码协议不一致）
-                        exitIfMasterReInstall(SharedObject.context);
-                    }
-                });
-            } catch (Exception e) {
-                Log.e("weijai", "wrapper:{" + agentCallback.targetPackageName() + "} 调度挂钩失败", e);
-            }
+            log.info("执行回调: {}", wrapperName);
+            //挂载钩子函数
+            wrapper.onXposedHotLoad();
+            //将agent注册到server端，让server可以rpc到agent
+            log.info("注册:{} 到hermes server registry", wrapperName);
+            AgentRegister.registerToServer(wrapper, context);
+            //启动timer，保持和server的心跳，发现server死掉的话，拉起server
+            log.info("启动到server 心跳保持timer");
+            SharedObject.agentTimer.scheduleAtFixedRate(new AgentDaemonTask(context, wrapper), 1000, 4000);
+            //在hermesAgent（master重新安装的时候，程序自身自杀，这是因为hermesAgent作为框架代码注入到本程序，
+            //hermesAgent重新安装可能意味着框架逻辑发生了更新，新版的交互协议可能和当前app中植入的框架代码协议不一致）
+            exitIfMasterReInstall(SharedObject.context);
+        } catch (Exception e) {
+            Log.e("weijia", "wrapper:{" + wrapper.targetPackageName() + "} 调度挂钩失败", e);
         }
     }
 
@@ -197,11 +187,11 @@ public class HotLoadPackageEntry {
     }
 
     @SuppressWarnings("unchecked")
-    private static synchronized Set<EmbedWrapper> findExternalCallBack() {
+    private static synchronized ExternalWrapper findExternalCallBack() {
         File modulesDir = new File(CommonUtils.HERMES_WRAPPER_DIR);
         if (!modulesDir.exists() || !modulesDir.canRead()) {
             //Log.w("weijia", "hermesModules 文件为空，无外置HermesWrapper");
-            return Collections.emptySet();
+            return null;
         }
 
         Set<EmbedWrapper> ret = Sets.newHashSet();
@@ -249,44 +239,45 @@ public class HotLoadPackageEntry {
                 String packageName = apkFile.getApkMeta().getPackageName();
                 ClassScanner.SubClassVisitor<AgentCallback> subClassVisitor = new ClassScanner.SubClassVisitor(true, AgentCallback.class);
                 ClassScanner.scan(subClassVisitor, Sets.newHashSet(packageName), apkFilePath);
-                List<EmbedWrapper> transform = transform(subClassVisitor.getSubClass(), apkFile.getApkMeta().getVersionCode());
-                List<ActionRequestHandler> requestHandlers = null;
-                if (transform.size() > 0) {
-                    for (EmbedWrapper embedWrapper : transform) {
-                        if (embedWrapper instanceof ExternalWrapper && ((ExternalWrapper) embedWrapper).getDelegate() instanceof MultiActionWrapper) {
-                            MultiActionWrapper multiActionWrapper = (MultiActionWrapper) ((ExternalWrapper) embedWrapper).getDelegate();
-                            if (requestHandlers == null) {
-                                requestHandlers = MultiActionWrapperFactory.scanActionWrappers(packageName, apkFilePath);
-                            }
-                            if (requestHandlers.size() == 0) {
-                                break;
-                            }
-                            for (ActionRequestHandler actionRequestHandler : requestHandlers) {
-                                try {
-                                    multiActionWrapper.registryHandler(actionRequestHandler);
-                                } catch (Exception e) {
-                                    //ignore
-                                }
-                            }
-                        }
-                    }
-                    ret.addAll(transform);
+                if (subClassVisitor.getSubClass().isEmpty()) {
+                    Log.w("weijia", "can not find any hermes wrapper implement in apk file :" + apkFilePath.getAbsoluteFile());
                     continue;
                 }
-                //scan action and wrap if if there is no wrapper defined in apk
-                MultiActionWrapper wrapperByAction = MultiActionWrapperFactory.createWrapperByAction(packageName, apkFilePath);
-                if (wrapperByAction != null) {
-                    ret.add(new ExternalWrapper(wrapperByAction, SharedObject.loadPackageParam.packageName, apkFile.getApkMeta().getVersionCode()));
+                if (subClassVisitor.getSubClass().size() > 1) {
+                    Log.e("weijia", "a wrapper apk module can hold only one hermes wrapper ,now : " + StringUtils.join(Iterables.transform(subClassVisitor.getSubClass(), new Function<Class<? extends AgentCallback>, String>() {
+                        @Override
+                        public String apply(Class<? extends AgentCallback> input) {
+                            return input.getName();
+                        }
+                    }), ","));
+                    continue;
                 }
+                AgentCallback agentCallback = subClassVisitor.getSubClass().get(0).newInstance();
+                if (agentCallback instanceof ExternalWrapper && ((ExternalWrapper) agentCallback).getDelegate() instanceof MultiActionWrapper) {
+                    MultiActionWrapper multiActionWrapper = (MultiActionWrapper) ((ExternalWrapper) agentCallback).getDelegate();
+                    ArrayList<ActionRequestHandler> requestHandlers = MultiActionWrapperFactory.scanActionWrappers(packageName, apkFilePath);
+                    if (requestHandlers.size() == 0) {
+                        Log.e("weijia", "can not find any action request implement in ak file:" + apkFilePath.getAbsoluteFile());
+                        return null;
+                    }
+                    for (ActionRequestHandler actionRequestHandler : requestHandlers) {
+                        try {
+                            multiActionWrapper.registryHandler(actionRequestHandler);
+                        } catch (Exception e) {
+                            //ignore
+                        }
+                    }
+                }
+                return new ExternalWrapper(agentCallback, SharedObject.loadPackageParam.packageName, apkFile.getApkMeta().getVersionCode());
             } catch (Exception e) {
-                Log.w("weijia", "failed to load hermes-wrapper module", e);
+                Log.e("weijia", "failed to load hermes-wrapper module", e);
             }
         }
-        return ret;
+        return null;
     }
 
-
-    private static List<EmbedWrapper> transform(List<Class<? extends AgentCallback>> classList, final long versionCode) {
+    private static List<EmbedWrapper> transform(List<Class<? extends
+            AgentCallback>> classList, final long versionCode) {
         return Lists.newArrayList(Iterables.filter(Iterables.transform(classList, new Function<Class<? extends AgentCallback>, EmbedWrapper>() {
             @Nullable
             @Override
@@ -311,7 +302,8 @@ public class HotLoadPackageEntry {
         }));
     }
 
-    private static Set<EmbedWrapper> filter(List<Class<? extends EmbedWrapper>> subClassVisitor) {
+    private static Set<EmbedWrapper> filter(List<Class<? extends
+            EmbedWrapper>> subClassVisitor) {
         return Sets.newHashSet(Iterables.filter(Lists.transform(subClassVisitor, new Function<Class<? extends AgentCallback>, EmbedWrapper>() {
             @Nullable
             @Override
