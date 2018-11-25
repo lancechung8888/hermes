@@ -27,7 +27,7 @@ public class EmbedHermes {
     private static int serverPort = 0;
 
     static {
-        if (SharedObject.context == null) {
+        if (SharedObject.context != null) {
             try {
                 //try to configure log component
                 LogConfigurator.configure(SharedObject.context);
