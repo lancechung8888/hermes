@@ -2,6 +2,7 @@ package com.virjar.hermes.hermesagent.hermes_api;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONException;
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.virjar.xposed_extention.ClassLoadMonitor;
 
@@ -78,11 +79,37 @@ public class AsyncResult {
         }
     }
 
+    /**
+     * 包裹一个rxJava对象，将它封装为一个异步返回对象。类似future
+     *
+     * @param rxJavaObserver RxJava的观察者对象
+     * @return HeremsAPI定义的Future结构
+     */
     public static AsyncResult wrapRxJava(Object rxJavaObserver) {
-        return wrapRxJava(rxJavaObserver, "rx.Observer", "subscribe");
+        return wrapRxJava(rxJavaObserver, "rx.Observer", "subscribe", null);
     }
 
-    public static AsyncResult wrapRxJava(final Object rxJavaObserver, final String observerClassName, final String subscribeMethodName) {
+    /**
+     * 包裹一个rxJava对象，将它封装为一个异步返回对象。类似future
+     *
+     * @param rxJavaObserver  RxJava的观察者对象
+     * @param dataTransformer 当数据异步返回的时候，有可能需要对数据进行编码转换。同步的时候可以直接转换，异步就只能通过回调拦截
+     * @return HeremsAPI定义的Future结构
+     */
+    public static AsyncResult wrapRxJava(Object rxJavaObserver, Function<Object, Object> dataTransformer) {
+        return wrapRxJava(rxJavaObserver, "rx.Observer", "subscribe", dataTransformer);
+    }
+
+    /**
+     * 包裹一个rxJava对象，将它封装为一个异步返回对象。类似future
+     *
+     * @param observerClassName   在有混淆的情况下，消费者class名称可能发生变化
+     * @param subscribeMethodName 在混淆的情况下，subscribe方法名字可能发生变化
+     * @param rxJavaObserver      RxJava的观察者对象
+     * @param dataTransformer     当数据异步返回的时候，有可能需要对数据进行编码转换。同步的时候可以直接转换，异步就只能通过回调拦截
+     * @return HeremsAPI定义的Future结构
+     */
+    public static AsyncResult wrapRxJava(final Object rxJavaObserver, final String observerClassName, final String subscribeMethodName, final Function<Object, Object> dataTransformer) {
         return new AsyncResult.AsyncResultBuilder() {
 
             @Override
@@ -98,7 +125,11 @@ public class AsyncResult {
                                     return null;
                                 }
                                 if (args.length > 0) {
-                                    asyncResult.notifyDataArrival(args[0]);
+                                    Object data = args[0];
+                                    if (dataTransformer != null) {
+                                        data = dataTransformer.apply(data);
+                                    }
+                                    asyncResult.notifyDataArrival(data);
                                 }
                                 return null;
                             }
@@ -108,6 +139,12 @@ public class AsyncResult {
         }.build();
     }
 
+    /**
+     * 对Retrofit框架的异步对象进行包装
+     *
+     * @param retrofitCall 一个代表Retrofit异步任务的对象
+     * @return 异步调用后的结果
+     */
     public static Object wrapRetrofit(Object retrofitCall) {
         Object response = XposedHelpers.callMethod(retrofitCall, "execute");
         if (response == null) {
