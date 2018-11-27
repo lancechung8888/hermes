@@ -1,5 +1,8 @@
 package com.virjar.hermes.hermesagent.hermes_api;
 
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONException;
 import com.google.common.base.Function;
@@ -109,7 +112,7 @@ public class AsyncResult {
      * @param dataTransformer     当数据异步返回的时候，有可能需要对数据进行编码转换。同步的时候可以直接转换，异步就只能通过回调拦截
      * @return HeremsAPI定义的Future结构
      */
-    public static AsyncResult wrapRxJava(final Object rxJavaObserver, final String observerClassName, final String subscribeMethodName, final Function<Object, Object> dataTransformer) {
+    public static AsyncResult wrapRxJava(final @NonNull Object rxJavaObserver, final @NonNull String observerClassName, final @NonNull String subscribeMethodName, final @Nullable Function<Object, Object> dataTransformer) {
         return new AsyncResult.AsyncResultBuilder() {
 
             @Override
