@@ -71,6 +71,29 @@ function reload_hermes()
     adb -s ${line}:4555 shell reboot
 }
 
+function check_version()
+{
+    target_version=$1
+    if [[ -z ${target_version} ]] ;then
+        return 0
+    fi
+    getVersionUrl="http://${line}:5597/agentVersion"
+    echo "curl ${getVersionUrl}"
+    version=`curl ${getVersionUrl}`
+     if [ ! $? -eq 0 ] ;then
+            echo "device offline"
+            offline_list[${#offline_list[@]}]=${line}
+            continue
+         fi
+    echo "agent version:${version}"
+
+    if [[ ${version} =~ ${target_version} ]] ;then
+        echo "the agent upgrade already"
+        return 0
+    fi
+    return 1
+}
+
 cd `dirname $0`
 cd ..
 echo "build hermes agent apk"
@@ -97,6 +120,7 @@ fi
 echo 'deploy device list '${device_list}
 
 
+
 for line in ${device_list}
 do
     if [[ ${line} == "#"* ]] ;then
@@ -121,6 +145,12 @@ do
            continue
     fi
 
+    check_version $1
+    check_version_result=$?
+    if [[ ${check_version_result} == 0  ]] ;then
+        continue
+    fi
+
     #adb -s $line:4555 shell am start -n "de.robv.android.xposed.installer/de.robv.android.xposed.installer.WelcomeActivity" -a android.intent.action.MAIN -c android.intent.category.LAUNCHER
 
     echo "adb -s $line:4555 push ${apk_location} /data/local/tmp/com.virjar.hermes.hermesagent"
@@ -131,6 +161,8 @@ do
 
     # 目前reload机制存在问题
     # reload_hermes ${line}
+    echo "adb -s ${line}:4555 shell reboot"
+    adb -s ${line}:4555 shell reboot
 
     echo
     echo "$line deploy success"

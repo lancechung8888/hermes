@@ -377,7 +377,7 @@ public class HttpServer {
         server.get(Constant.getAgentVersionCodePath, new HttpServerRequestCallback() {
             @Override
             public void onRequest(AsyncHttpServerRequest request, AsyncHttpServerResponse response) {
-                CommonUtils.sendJSON(response, CommonRes.success(BuildConfig.VERSION_CODE));
+                CommonUtils.sendPlainText(response, String.valueOf(BuildConfig.VERSION_CODE));
             }
         });
     }
