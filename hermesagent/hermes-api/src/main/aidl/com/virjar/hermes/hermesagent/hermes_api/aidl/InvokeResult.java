@@ -95,12 +95,15 @@ public class InvokeResult implements Parcelable {
         }
     }
 
-
-    public static InvokeResult failed(String message) {
+    public static InvokeResult failed(int errorCode, String message) {
         if (message.length() > 4096) {
             message = message.substring(0, 4096);
         }
-        return new InvokeResult(statusFailed, dataTypeString, message, false);
+        return new InvokeResult(errorCode, dataTypeString, message, false);
+    }
+
+    public static InvokeResult failed(String message) {
+        return failed(statusFailed, message);
     }
 
 

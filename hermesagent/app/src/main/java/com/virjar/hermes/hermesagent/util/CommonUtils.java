@@ -36,7 +36,6 @@ import net.dongliu.apk.parser.bean.ApkMeta;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
@@ -47,8 +46,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.security.MessageDigest;
@@ -74,16 +71,6 @@ public class CommonUtils {
         return BuildConfig.DEBUG;
         //return false;
     }
-
-
-    public static String getStackTrack(Throwable throwable) {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(byteArrayOutputStream));
-        throwable.printStackTrace(printWriter);
-        printWriter.close();
-        return byteArrayOutputStream.toString(Charsets.UTF_8);
-    }
-
 
     public static void sendJSON(AsyncHttpServerResponse response, CommonRes commonRes) {
         response.send(Constant.jsonContentType, JSONObject.toJSONString(commonRes));

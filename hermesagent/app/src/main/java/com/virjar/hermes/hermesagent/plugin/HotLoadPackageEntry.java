@@ -119,6 +119,7 @@ public class HotLoadPackageEntry {
             exitIfMasterReInstall(SharedObject.context);
         } catch (Exception e) {
             Log.e("weijia", "wrapper:{" + wrapper.targetPackageName() + "} 调度挂钩失败", e);
+            AgentRegister.registerToServer(new BrokenWrapper(e), context);
         }
     }
 

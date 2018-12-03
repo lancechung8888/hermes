@@ -58,6 +58,8 @@ public interface Constant {
     String needInvokePackageParamMessage = "the param {" + invokePackage + "} not present";
     int status_rate_limited = -4;
     String rateLimitedMessage = "rate limited";
+    int status_wrapper_broken = -5;
+    String wrapperBrokenMessage = "wrapper start up failed,please check your wrapper code or rollback you deploy";
     String rebind = "rebind";
 
     String unknown = "unknown";

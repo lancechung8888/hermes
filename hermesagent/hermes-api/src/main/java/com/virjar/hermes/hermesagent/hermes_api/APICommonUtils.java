@@ -1,17 +1,16 @@
 package com.virjar.hermes.hermesagent.hermes_api;
 
 import android.content.Context;
-import android.os.Process;
-import android.util.Log;
 
+import com.google.common.base.Charsets;
 import com.virjar.hermes.hermesagent.hermes_api.aidl.InvokeRequest;
 
-import org.joda.time.DateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.io.output.ByteArrayOutputStream;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -125,10 +124,18 @@ public class APICommonUtils {
     }
 
     public static String translateSimpleExceptionMessage(Throwable exception) {
-        String message = exception.getMessage();
-        if (message == null || message.trim().length() == 0) {
-            message = exception.getClass().getName();
+        String message = exception.getClass().getName();
+        if (message != null && exception.getMessage().trim().length() == 0) {
+            message += ":" + exception.getMessage().trim();
         }
         return message;
+    }
+
+    public static String getStackTrack(Throwable throwable) {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(byteArrayOutputStream));
+        throwable.printStackTrace(printWriter);
+        printWriter.close();
+        return byteArrayOutputStream.toString(Charsets.UTF_8);
     }
 }
