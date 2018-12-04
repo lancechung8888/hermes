@@ -16,6 +16,7 @@ import java.util.Map;
  */
 public class MultiActionWrapper extends ExternalWrapperAdapter {
     private static final String action = "action";
+    private static final String actionList = "_actionList";
 
     /**
      * 存在一个默认的action，为了兼容一些老接口，由于接口刚刚开发的时候，只有一个api。那个时候没有使用多action机制。后来多action机制上线之后，不能影响老的接口
@@ -58,6 +59,9 @@ public class MultiActionWrapper extends ExternalWrapperAdapter {
         action = actionCaseIgnore() ? action.toLowerCase() : action;
         ActionRequestHandler requestHandler = requestHandlerMap.get(action);
         if (requestHandler == null) {
+            if (actionList.equalsIgnoreCase(action)) {
+                return InvokeResult.success(requestHandlerMap.keySet(), SharedObject.context);
+            }
             return InvokeResult.failed("unknown action: " + action);
         }
         Object handlerResult = requestHandler.handleRequest(invokeRequest);
