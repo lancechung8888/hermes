@@ -93,6 +93,9 @@ public class EmbedHermes {
             }
             EmbedHermes.agentCallback = agentCallback;
         }
+        if (!agentCallback.needHook(SharedObject.loadPackageParam)) {
+            log.info("this wrapper not suitable for process:{}", SharedObject.loadPackageParam.processName);
+        }
         EmbedHermes.serverPort = serverPort;
         final AsyncHttpServer server = new AsyncHttpServer();
         AsyncServer mAsyncServer = new AsyncServer("httpServerLooper");
