@@ -90,7 +90,7 @@ public class MultiActionWrapperFactory {
         }));
     }
 
-    private static File bindApkLocation(ClassLoader pathClassLoader) {
+    public static File bindApkLocation(ClassLoader pathClassLoader) {
         // 不能使用getResourceAsStream，这是因为classloader双亲委派的影响
 //        InputStream stream = pathClassLoader.getResourceAsStream(ANDROID_MANIFEST_FILENAME);
 //        if (stream == null) {

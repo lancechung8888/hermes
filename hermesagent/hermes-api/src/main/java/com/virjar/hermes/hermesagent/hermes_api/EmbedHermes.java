@@ -3,16 +3,19 @@ package com.virjar.hermes.hermesagent.hermes_api;
 import android.util.Log;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import com.koushikdutta.async.AsyncServer;
 import com.koushikdutta.async.http.server.AsyncHttpServer;
 import com.koushikdutta.async.http.server.AsyncHttpServerRequest;
 import com.koushikdutta.async.http.server.AsyncHttpServerResponse;
 import com.koushikdutta.async.http.server.HttpServerRequestCallback;
+import com.virjar.xposed_extention.ClassScanner;
 import com.virjar.xposed_extention.ReflectUtil;
 import com.virjar.xposed_extention.SharedObject;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import lombok.extern.slf4j.Slf4j;
@@ -37,8 +40,39 @@ public class EmbedHermes {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public static void bootstrap(String basePackage, Class loader) {
-        bootstrap(MultiActionWrapperFactory.createWrapperByAction(basePackage, loader.getClassLoader()));
+        ClassScanner.SubClassVisitor<AgentCallback> subClassVisitor = new ClassScanner.SubClassVisitor(true, AgentCallback.class);
+        ClassScanner.scan(subClassVisitor, Lists.newArrayList(basePackage), MultiActionWrapperFactory.bindApkLocation(loader.getClassLoader()));
+        List<Class<? extends AgentCallback>> subClass = subClassVisitor.getSubClass();
+        if (subClass.size() > 1) {
+            throw new RuntimeException("found duplicate wrapper implement:" + com.alibaba.fastjson.JSONObject.toJSONString(subClass));
+        }
+        AgentCallback agentCallback;
+        if (subClass.size() == 0) {
+            agentCallback = new MultiActionWrapper();
+        } else {
+            try {
+                agentCallback = subClass.get(0).newInstance();
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        if (agentCallback instanceof MultiActionWrapper) {
+            ArrayList<ActionRequestHandler> actionRequestHandlers = MultiActionWrapperFactory.scanActionWrappers(basePackage, MultiActionWrapperFactory.bindApkLocation(loader.getClassLoader()));
+            if (actionRequestHandlers.size() == 0) {
+                throw new IllegalStateException("can not find any ActionRequestHandler");
+            }
+            MultiActionWrapper multiActionWrapper = (MultiActionWrapper) agentCallback;
+            for (ActionRequestHandler actionRequestHandler : actionRequestHandlers) {
+                try {
+                    multiActionWrapper.registryHandler(MultiActionWrapperFactory.resolveAction(actionRequestHandler), actionRequestHandler);
+                } catch (Exception e) {
+                    //ignore
+                }
+            }
+        }
+        bootstrap(agentCallback);
     }
 
     public static void bootstrap(AgentCallback agentCallback) {
