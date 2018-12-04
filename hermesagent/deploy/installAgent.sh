@@ -80,11 +80,9 @@ function check_version()
     getVersionUrl="http://${line}:5597/agentVersion"
     echo "curl ${getVersionUrl}"
     version=`curl ${getVersionUrl}`
-     if [ ! $? -eq 0 ] ;then
-            echo "device offline"
-            offline_list[${#offline_list[@]}]=${line}
-            continue
-         fi
+    if [ ! $? -eq 0 ] ;then
+        return 0
+    fi
     echo "agent version:${version}"
 
     if [[ ${version} =~ ${target_version} ]] ;then
