@@ -118,7 +118,7 @@ public class HttpServer {
         );
         httpServerRequestCallback = new RPCInvokeCallback(fontService, j2Executor);
         log.info("register http request handler");
-        bindRootCommand();
+        bindIndexCommand();
         bindPingCommand();
         bindStartAppCommand(context);
         bindInvokeCommand();
@@ -127,9 +127,9 @@ public class HttpServer {
         bindExecuteShellCommand();
         bindRestartADBDCommand();
         bindReloadServiceCommand();
-        agentVersionCommand();
-        hermesLogCommand();
-        killAgent();
+        bindAgentVersionCommand();
+        bindHermesLogCommand();
+        bindKillAgentCommand();
 
         try {
             httpServerPort = Constant.httpServerPort;
@@ -199,7 +199,7 @@ public class HttpServer {
         j2Executor = null;
     }
 
-    private void bindRootCommand() {
+    private void bindIndexCommand() {
         server.get("/", new HttpServerRequestCallback() {
             @Override
             public void onRequest(AsyncHttpServerRequest request, final AsyncHttpServerResponse response) {
@@ -373,7 +373,7 @@ public class HttpServer {
         });
     }
 
-    private void agentVersionCommand() {
+    private void bindAgentVersionCommand() {
         server.get(Constant.getAgentVersionCodePath, new HttpServerRequestCallback() {
             @Override
             public void onRequest(AsyncHttpServerRequest request, AsyncHttpServerResponse response) {
@@ -382,7 +382,7 @@ public class HttpServer {
         });
     }
 
-    private void hermesLogCommand() {
+    private void bindHermesLogCommand() {
         server.get(Constant.hermesLogPath, new HttpServerRequestCallback() {
             @Override
             public void onRequest(AsyncHttpServerRequest request, final AsyncHttpServerResponse response) {
@@ -426,7 +426,7 @@ public class HttpServer {
         });
     }
 
-    private void killAgent() {
+    private void bindKillAgentCommand() {
         server.get(Constant.killHermesAgentPath, new HttpServerRequestCallback() {
             @Override
             public void onRequest(AsyncHttpServerRequest request, AsyncHttpServerResponse response) {
