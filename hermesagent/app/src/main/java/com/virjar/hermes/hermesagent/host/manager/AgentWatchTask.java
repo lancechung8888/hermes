@@ -22,6 +22,8 @@ import com.virjar.hermes.hermesagent.hermes_api.APICommonUtils;
 import com.virjar.hermes.hermesagent.hermes_api.Constant;
 import com.virjar.hermes.hermesagent.hermes_api.aidl.AgentInfo;
 import com.virjar.hermes.hermesagent.hermes_api.aidl.IHookAgentService;
+import com.virjar.hermes.hermesagent.hermes_api.aidl.InvokeRequest;
+import com.virjar.hermes.hermesagent.hermes_api.aidl.InvokeResult;
 import com.virjar.hermes.hermesagent.host.orm.ServiceModel;
 import com.virjar.hermes.hermesagent.host.orm.ServiceModel_Table;
 import com.virjar.hermes.hermesagent.host.service.FontService;
@@ -94,6 +96,30 @@ public class AgentWatchTask extends LoggerTimerTask {
         }
     }
 
+    private void offlineAgent(String serverName, final IHookAgentService hookAgentService) {
+        allRemoteHookService.put(serverName, new IHookAgentService.Stub() {
+            @Override
+            public AgentInfo ping() throws RemoteException {
+                return hookAgentService.ping();
+            }
+
+            @Override
+            public InvokeResult invoke(InvokeRequest param) {
+                return InvokeResult.failed(Constant.status_service_not_available, "offline from hermes admin configuration");
+            }
+
+            @Override
+            public void killSelf() throws RemoteException {
+                hookAgentService.killSelf();
+            }
+
+            @Override
+            public void clean(String filePath) throws RemoteException {
+                hookAgentService.clean(filePath);
+            }
+        });
+    }
+
     @Override
     public void doRun() {
         List<ServiceModel> needRestartApp = SQLite.select().from(ServiceModel.class).where(ServiceModel_Table.status.is(true)).queryList();
@@ -104,23 +130,29 @@ public class AgentWatchTask extends LoggerTimerTask {
         }
 
         Set<ServiceModel> needCheckWrapperApps = Sets.newHashSet();
-
         Set<String> onlineServices = Sets.newHashSet();
         for (Map.Entry<String, IHookAgentService> entry : allRemoteHookService.entrySet()) {
-            AgentInfo agentInfo = handleAgentHeartBeat(entry.getKey(), entry.getValue());
-            if (agentInfo != null) {
-                if (agentInfo.getVersionCode() > 0
-                        && watchServiceMap.containsKey(agentInfo.getPackageName())
-                        && watchServiceMap.get(agentInfo.getPackageName()).getWrapperVersionCode()
-                        != agentInfo.getVersionCode()) {
-                    log.info("the wrapper version update,need reinstall wrapper:{}", agentInfo.getPackageName());
-                    needCheckWrapperApps.add(watchServiceMap.get(agentInfo.getPackageName()));
-                } else {
-                    log.info("the wrapper for app:{} is online,skip restart it", agentInfo.getPackageName());
-                }
-                onlineServices.add(agentInfo.getPackageName());
-                needRestartApp.remove(watchServiceMap.get(agentInfo.getPackageName()));
+            if (!watchServiceMap.containsKey(entry.getKey())) {
+                log.info("the service:{} offline on hermes admin config,so reject invoke request", entry.getKey());
+                offlineAgent(entry.getKey(), entry.getValue());
+                continue;
             }
+            AgentInfo agentInfo = handleAgentHeartBeat(entry.getKey(), entry.getValue());
+            if (agentInfo == null) {
+                log.warn("heartbeat to service:{} failed", entry.getKey());
+                continue;
+            }
+            if (agentInfo.getVersionCode() > 0
+                    && watchServiceMap.containsKey(agentInfo.getPackageName())
+                    && watchServiceMap.get(agentInfo.getPackageName()).getWrapperVersionCode()
+                    != agentInfo.getVersionCode()) {
+                log.info("the wrapper version update,need reinstall wrapper:{}", agentInfo.getPackageName());
+                needCheckWrapperApps.add(watchServiceMap.get(agentInfo.getPackageName()));
+            } else {
+                log.info("the wrapper for app:{} is online,skip restart it", agentInfo.getPackageName());
+            }
+            onlineServices.add(agentInfo.getPackageName());
+            needRestartApp.remove(watchServiceMap.get(agentInfo.getPackageName()));
         }
         fontService.setOnlineServices(onlineServices);
         if (needRestartApp.size() == 0 && needCheckWrapperApps.size() == 0) {
