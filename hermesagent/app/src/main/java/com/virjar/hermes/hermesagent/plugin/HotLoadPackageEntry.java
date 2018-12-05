@@ -336,7 +336,7 @@ public class HotLoadPackageEntry {
     @SuppressWarnings("unchecked")
     private static Set<EmbedWrapper> findEmbedCallBack() {
         ClassScanner.SubClassVisitor<EmbedWrapper> subClassVisitor = new ClassScanner.SubClassVisitor(true, EmbedWrapper.class);
-        ClassScanner.scan(subClassVisitor, Sets.newHashSet(Constant.appHookSupperPackage), null);
+        ClassScanner.scan(subClassVisitor, Constant.appHookSupperPackage);
         List<Class<? extends EmbedWrapper>> subClass = subClassVisitor.getSubClass();
         return filter(subClass);
     }
