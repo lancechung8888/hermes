@@ -17,11 +17,13 @@ import com.virjar.hermes.hermesagent.BuildConfig;
 import com.virjar.hermes.hermesagent.hermes_api.APICommonUtils;
 import com.virjar.hermes.hermesagent.hermes_api.ActionRequestHandler;
 import com.virjar.hermes.hermesagent.hermes_api.AgentCallback;
+import com.virjar.hermes.hermesagent.hermes_api.AgentRegisterAware;
 import com.virjar.hermes.hermesagent.hermes_api.Constant;
 import com.virjar.hermes.hermesagent.hermes_api.EmbedWrapper;
 import com.virjar.hermes.hermesagent.hermes_api.LogConfigurator;
 import com.virjar.hermes.hermesagent.hermes_api.MultiActionWrapper;
 import com.virjar.hermes.hermesagent.hermes_api.MultiActionWrapperFactory;
+import com.virjar.hermes.hermesagent.hermes_api.WrapperRegister;
 import com.virjar.hermes.hermesagent.host.manager.AgentDaemonTask;
 import com.virjar.hermes.hermesagent.util.CommonUtils;
 import com.virjar.xposed_extention.ClassScanner;
@@ -59,7 +61,7 @@ public class HotLoadPackageEntry {
     private static final String TAG = "HotPluginLoader";
 
     @SuppressWarnings("unused")
-    public static void entry(Context context, XC_LoadPackage.LoadPackageParam loadPackageParam) {
+    public static void entry(final Context context, XC_LoadPackage.LoadPackageParam loadPackageParam) {
         if (StringUtils.equalsIgnoreCase(loadPackageParam.packageName, BuildConfig.APPLICATION_ID)) {
             //CommonUtils.xposedStartSuccess = true;
             Class commonUtilClass = XposedHelpers.findClass("com.virjar.hermes.hermesagent.util.CommonUtils", loadPackageParam.classLoader);
@@ -96,10 +98,10 @@ public class HotLoadPackageEntry {
             Log.e("weijia", "multi wrapper found,hermes agent can only load one hermes wrapper");
             return;
         }
-        EmbedWrapper wrapper = callbackMap.values().iterator().next();
+        final EmbedWrapper wrapper = callbackMap.values().iterator().next();
         try {
             setupInternalComponent();
-            String wrapperName;
+            final String wrapperName;
             if (wrapper instanceof ExternalWrapper) {
                 wrapperName = ((ExternalWrapper) wrapper).wrapperClassName();
             } else {
@@ -108,9 +110,28 @@ public class HotLoadPackageEntry {
             log.info("执行回调: {}", wrapperName);
             //挂载钩子函数
             wrapper.onXposedHotLoad();
-            //将agent注册到server端，让server可以rpc到agent
-            log.info("注册:{} 到hermes server registry", wrapperName);
-            AgentRegister.registerToServer(wrapper, context);
+            if (wrapper instanceof AgentRegisterAware) {
+                log.info("wrapper注册需要wrapper逻辑判定，传入注册器给wrapper");
+                ((AgentRegisterAware) wrapper).setOnAgentReadyListener(new WrapperRegister() {
+                    @Override
+                    public void regist() {
+                        log.info("注册:{} 到hermes server registry", wrapperName);
+                        AgentRegister.registerToServer(wrapper, context);
+                    }
+                });
+            } else if (wrapper instanceof ExternalWrapper && ((ExternalWrapper) wrapper).getDelegate() instanceof AgentRegisterAware) {
+                ((AgentRegisterAware) ((ExternalWrapper) wrapper).getDelegate()).setOnAgentReadyListener(new WrapperRegister() {
+                    @Override
+                    public void regist() {
+                        log.info("注册:{} 到hermes server registry", wrapperName);
+                        AgentRegister.registerToServer(wrapper, context);
+                    }
+                });
+            } else {
+                //将agent注册到server端，让server可以rpc到agent
+                log.info("注册:{} 到hermes server registry", wrapperName);
+                AgentRegister.registerToServer(wrapper, context);
+            }
             //启动timer，保持和server的心跳，发现server死掉的话，拉起server
             log.info("启动到server 心跳保持timer");
             SharedObject.agentTimer.scheduleAtFixedRate(new AgentDaemonTask(context, wrapper), 1000, 4000);
