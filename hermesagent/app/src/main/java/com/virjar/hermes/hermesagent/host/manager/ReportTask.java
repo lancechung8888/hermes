@@ -52,7 +52,7 @@ public class ReportTask extends LoggerTimerTask {
         this.fontService = fontService;
     }
 
-    private void report() {
+    public void report() {
         ReportModel reportModel = new ReportModel();
         reportModel.setAgentServerIP(APICommonUtils.getLocalIp());
         reportModel.setAgentServerPort(HttpServer.getInstance().getHttpServerPort());

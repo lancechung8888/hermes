@@ -84,6 +84,7 @@ public class FontService extends Service {
     private Set<String> allCallback = null;
 
     private DaemonBinder daemonBinder = null;
+    private ReportTask reportTask = null;
 
     @SuppressWarnings("unchecked")
     private void scanCallBack() {
@@ -278,6 +279,7 @@ public class FontService extends Service {
             log.info("service :{} register success", agentInfo.getPackageName());
             mCallbacks.register(hookAgentService);
             allRemoteHookService.putIfAbsent(agentInfo.getServiceAlis(), hookAgentService);
+            reportTask.report();
         }
 
         @Override
@@ -484,7 +486,8 @@ public class FontService extends Service {
         if (!CommonUtils.isLocalTest()) {
             //向服务器上报服务信息,正式版本才进行上报，测试版本上报可能使得线上服务打到测试apk上面来
             //重启之后，马上进行上报
-            timer.scheduleAtFixedRate(new ReportTask(this, this),
+            reportTask = new ReportTask(this, this);
+            timer.scheduleAtFixedRate(reportTask,
                     1, 60000);
             //监控所有agent状态
             timer.scheduleAtFixedRate(new AgentWatchTask(this, allRemoteHookService, this), 1000, 30000);
