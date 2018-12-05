@@ -79,7 +79,21 @@ public class EmbedHermes {
         bootstrap(agentCallback, Constant.httpServerPort);
     }
 
-    public static void bootstrap(AgentCallback agentCallback, final int serverPort) {
+    public static void bootstrap(final AgentCallback agentCallback, final int serverPort) {
+        if (agentCallback instanceof AgentRegisterAware) {
+            ((AgentRegisterAware) agentCallback).setOnAgentReadyListener(new WrapperRegister() {
+                @Override
+                public void regist() {
+                    bootstrapInternal(agentCallback, serverPort);
+                }
+            });
+        } else {
+            bootstrapInternal(agentCallback, serverPort);
+        }
+    }
+
+
+    private static void bootstrapInternal(AgentCallback agentCallback, final int serverPort) {
         if (SharedObject.loadPackageParam == null || SharedObject.context == null) {
             throw new IllegalStateException("com.virjar.xposed_extention.SharedObject must be init first");
         }
