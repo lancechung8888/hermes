@@ -125,7 +125,7 @@ public class APICommonUtils {
 
     public static String translateSimpleExceptionMessage(Throwable exception) {
         String message = exception.getClass().getName();
-        if (exception.getMessage() != null && exception.getMessage().trim().length() == 0) {
+        if (exception.getMessage() != null && exception.getMessage().trim().length() >= 0) {
             message += ":" + exception.getMessage().trim();
         }
         return message;
