@@ -52,8 +52,8 @@ public class AsyncResult {
         Preconditions.checkArgument(!(responseData instanceof AsyncResult), "async response can not be a AsyncResult type");
         data = responseData;
         synchronized (lock) {
-            lock.notify();
             callbackCalled = true;
+            lock.notify();
         }
     }
 

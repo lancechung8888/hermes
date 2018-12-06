@@ -74,6 +74,10 @@ public class XposedInit implements IXposedHookLoadPackage {
         if (Process.myUid() < Process.FIRST_APPLICATION_UID) {
             return;
         }
+        if (!lpparam.isFirstApplication) {
+            //一个进程，只应该加载一次
+            return;
+        }
 
         Ones.hookOnes(Application.class, "hermes_application_attach_entry", new Ones.DoOnce() {
             @Override
