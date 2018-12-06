@@ -205,7 +205,7 @@ public class HttpServer {
             public void onRequest(AsyncHttpServerRequest request, final AsyncHttpServerResponse response) {
                 String baseURL = CommonUtils.localServerBaseURL();
                 Hashtable<String, ArrayList<Object>> actions = ReflectUtil.getFieldValue(server, "mActions");
-                StringBuilder html = new StringBuilder("<html><head><meta charset=\"UTF-8\"><title>Hermes</title></head><body><p>HermesAgent ，项目地址：<a href=\"https://gitee.com/virjar/hermesagent\">https://gitee.com/virjar/hermesagent</a></p>");
+                StringBuilder html = new StringBuilder("<html><head><meta charset=\"UTF-8\"><title>Hermes</title></head><body><p>HermesAgent ，项目地址：<a href=\"https://gitee.com/virjar/hermes\">https://gitee.com/virjar/hermes</a></p>");
                 html.append("<p>服务base地址：").append(baseURL).append("</p>");
                 html.append("<p>agent版本：").append(BuildConfig.VERSION_CODE).append("</p>");
                 html.append("<p>设备ID：").append(CommonUtils.deviceID(HttpServer.this.fontService)).append("</p>");
