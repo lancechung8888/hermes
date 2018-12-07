@@ -55,5 +55,4 @@ if (false && System.getenv().I_AM_KOUSH == 'true') {
   apply from: 'https://raw.githubusercontent.com/koush/mvn-repo/master/maven.gradle'
 }
 
-//参考 https://github.com/qiujuer/BeFoot/tree/master/blog/gradle-mvn-push
 apply from: 'gradle-mvn-push.gradle'

@@ -1,2 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<merger version="3"><dataSet config="main"><source path="/Users/dengweijia/git/hermes/hermesagent/AndroidAsync/libs"/></dataSet><dataSet config="release"><source path="/Users/dengweijia/git/hermes/hermesagent/AndroidAsync/src/release/jniLibs"/></dataSet></merger>

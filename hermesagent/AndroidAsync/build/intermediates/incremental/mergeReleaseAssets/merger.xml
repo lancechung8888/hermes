@@ -1,2 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<merger version="3"><dataSet config="main"><source path="/Users/dengweijia/git/hermes/hermesagent/AndroidAsync/src/main/assets"/><source path="/Users/dengweijia/git/hermes/hermesagent/AndroidAsync/build/generated/assets/shaders/release"/></dataSet><dataSet config="release"><source path="/Users/dengweijia/git/hermes/hermesagent/AndroidAsync/src/release/assets"/></dataSet></merger>
