@@ -25,7 +25,12 @@ public class AsyncResult {
     private Object data;
     private boolean callbackCalled = false;
     private final Object lock = new Object();
+    private Long waitTimeOut = null;
 
+    public AsyncResult setWaitTimeOut(Long waitTimeOut) {
+        this.waitTimeOut = waitTimeOut;
+        return this;
+    }
 
     void waitCallback(long timeOUt) {
         if (callbackCalled) {
@@ -34,6 +39,9 @@ public class AsyncResult {
         synchronized (lock) {
             if (callbackCalled) {
                 return;
+            }
+            if (waitTimeOut != null) {
+                timeOUt = waitTimeOut;
             }
             try {
                 lock.wait(timeOUt);
