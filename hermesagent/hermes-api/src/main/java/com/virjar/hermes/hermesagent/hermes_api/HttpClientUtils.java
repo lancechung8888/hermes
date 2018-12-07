@@ -90,7 +90,7 @@ public class HttpClientUtils {
         return client;
     }
 
-    private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+    private static final MediaType JSON = MediaType.parse("application/json; charset=utf8");
 
     public static String get(String url) {
         return executeSync(getRequest(url));

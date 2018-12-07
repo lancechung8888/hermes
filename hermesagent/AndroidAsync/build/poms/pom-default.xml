@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.virjar</groupId>
+  <artifactId>AndroidAsync</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>aar</packaging>
+  <name>AndroidAsync</name>
+  <description>mirror for AndroidAsync,fix some bug temporary</description>
+  <url>https://gitee.com/virjar/hermes/hermesagent/AndroidAsync</url>
+  <inceptionYear>2018</inceptionYear>
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+      <comments>A business-friendly OSS license</comments>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <id>weijia.deng</id>
+      <name>dengweijia</name>
+      <email>virjar@virjar.com</email>
+      <url>http://www.virjar.com</url>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git@gitee.com:virajr/hermes.git</connection>
+    <developerConnection>scm:git@gitee.com:virajr/hermes.git</developerConnection>
+    <url>https://gitee.com/virjar/hermes/hermesagent/AndroidAsync</url>
+  </scm>
+  <issueManagement>
+    <system>GitEE</system>
+    <url>https://gitee.com/virjar/hermes/issues</url>
+  </issueManagement>
+</project>
