@@ -50,7 +50,7 @@ dependencies {
     //日志模块
     api 'org.slf4j:slf4j-api:1.7.25'
     api 'com.github.tony19:logback-android:1.3.0-2'
-    api 'com.virjar:xposed-extention:1.0.6'
+    api 'com.virjar:xposed-extention:1.0.7-SNAPSHOT'
 
     annotationProcessor 'org.projectlombok:lombok:1.18.2'
     compileOnly 'org.projectlombok:lombok:1.18.2'
@@ -63,3 +63,9 @@ dependencies {
 //参考 https://github.com/qiujuer/BeFoot/tree/master/blog/gradle-mvn-push
 apply from: 'gradle-mvn-push.gradle'
 
+
+//由于我们可能引用snapshot版本的API，此时gradle缓存导致无法加载到最新的依赖，此时可以打开如下注释，这样就不会走缓存
+configurations.all {
+    // check for updates every build
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}

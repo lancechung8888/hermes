@@ -236,14 +236,23 @@ public class SimpleFuture<T> extends SimpleCancellable implements DependentFutur
     private Future<T> setComplete(Future<T> future, FutureCallsite callsite) {
         setParent(future);
 
-        SimpleFuture<T> ret = new SimpleFuture<>();
+        final SimpleFuture<T> ret = new SimpleFuture<>();
         if (future instanceof SimpleFuture) {
             ((SimpleFuture<T>)future).setCallbackInternal(callsite, null,
-                    (e, result, next) ->
-                            ret.setComplete(SimpleFuture.this.setComplete(e, result, next) ? null : new CancellationException(), result, next));
+                    new FutureCallbackInternal<T>() {
+                        @Override
+                        public void onCompleted(Exception e, T result, FutureCallsite next) {
+                                    ret.setComplete(SimpleFuture.this.setComplete(e, result, next) ? null : new CancellationException(), result, next);
+                        }
+                    });
         }
         else {
-            future.setCallback((e, result) -> ret.setComplete(SimpleFuture.this.setComplete(e, result, null) ? null : new CancellationException()));
+            future.setCallback(new FutureCallback<T>() {
+                @Override
+                public void onCompleted(Exception e, T result) {
+                    ret.setComplete(SimpleFuture.this.setComplete(e, result, null) ? null : new CancellationException());
+                }
+            });
         }
         return ret;
     }
@@ -270,87 +279,110 @@ public class SimpleFuture<T> extends SimpleCancellable implements DependentFutur
 
 
     @Override
-    public Future<T> success(SuccessCallback<T> callback) {
+    public Future<T> success(final SuccessCallback<T> callback) {
         final SimpleFuture<T> ret = new SimpleFuture<>();
         ret.setParent(this);
-        setCallbackInternal(null, null, (e, result, next) -> {
-            if (e == null) {
-                try {
-                    callback.success(result);
+        setCallbackInternal(null, null, new FutureCallbackInternal<T>() {
+            @Override
+            public void onCompleted(Exception e, T result, FutureCallsite next) {
+                if (e == null) {
+                    try {
+                        callback.success(result);
+                    } catch (Exception callbackException) {
+                        e = callbackException;
+                        // note that the result is not nulled out. this is useful for managed resources, like sockets.
+                        // for example: a successful socket connection was made, but the request can be cancelled.
+                        // so, returning an error along with a socket object allows for failure cleanup.
+                    }
                 }
-                catch (Exception callbackException) {
-                    e = callbackException;
-                    // note that the result is not nulled out. this is useful for managed resources, like sockets.
-                    // for example: a successful socket connection was made, but the request can be cancelled.
-                    // so, returning an error along with a socket object allows for failure cleanup.
-                }
+                ret.setComplete(e, result, next);
             }
-            ret.setComplete(e, result, next);
         });
         return ret;
     }
 
     @Override
-    public <R> Future<R> then(ThenFutureCallback<R, T> then) {
+    public <R> Future<R> then(final ThenFutureCallback<R, T> then) {
         final SimpleFuture<R> ret = new SimpleFuture<>();
         ret.setParent(this);
-        setCallbackInternal(null, null, (e, result, next) -> {
-            if (e != null) {
-                ret.setComplete(e, null, next);
-                return;
+        setCallbackInternal(null, null, new FutureCallbackInternal<T>() {
+            @Override
+            public void onCompleted(Exception e, T result, FutureCallsite next) {
+                if (e != null) {
+                    ret.setComplete(e, null, next);
+                    return;
+                }
+                Future<R> out;
+                try {
+                    out = then.then(result);
+                } catch (Exception callbackException) {
+                    ret.setComplete(callbackException, null, next);
+                    return;
+                }
+                ret.setComplete(out, next);
             }
-            Future<R> out;
-            try {
-                out = then.then(result);
-            }
-            catch (Exception callbackException) {
-                ret.setComplete(callbackException, null, next);
-                return;
-            }
-            ret.setComplete(out, next);
-
         });
         return ret;
     }
 
     @Override
     public <R> Future<R> thenConvert(final ThenCallback<R, T> callback) {
-        return then(from -> new SimpleFuture<>(callback.then(from)));
-    }
-
-    @Override
-    public Future<T> fail(FailCallback fail) {
-        return failRecover(e -> {
-            fail.fail(e);
-            return this;
+        return then(new ThenFutureCallback<R, T>() {
+            @Override
+            public Future<R> then(T from) throws Exception {
+                return new SimpleFuture<>(callback.then(from));
+            }
         });
     }
 
     @Override
-    public Future<T> failRecover(FailRecoverCallback<T> fail) {
-        SimpleFuture<T> ret = new SimpleFuture<>();
+    public Future<T> fail(final FailCallback fail) {
+        return failRecover(new FailRecoverCallback<T>() {
+            @Override
+            public Future<T> fail(Exception e) throws Exception {
+                fail.fail(e);
+                return SimpleFuture.this;
+            }
+        });
+//        return failRecover(e -> {
+//            fail.fail(e);
+//            return this;
+//        });
+    }
+
+    @Override
+    public Future<T> failRecover(final FailRecoverCallback<T> fail) {
+        final SimpleFuture<T> ret = new SimpleFuture<>();
         ret.setParent(this);
-        setCallbackInternal(null, null, (e, result, next) -> {
-            if (e == null) {
-                ret.setComplete(e, result, next);
-                return;
+        setCallbackInternal(null, null, new FutureCallbackInternal<T>() {
+            @Override
+            public void onCompleted(Exception e, T result, FutureCallsite next) {
+                    if (e == null) {
+                        ret.setComplete(e, result, next);
+                        return;
+                    }
+                    Future<T> out;
+                    try {
+                        out = fail.fail(e);
+                    }
+                    catch (Exception callbackException) {
+                        ret.setComplete(callbackException, null, next);
+                        return;
+                    }
+                    ret.setComplete(out, next);
             }
-            Future<T> out;
-            try {
-                out = fail.fail(e);
-            }
-            catch (Exception callbackException) {
-                ret.setComplete(callbackException, null, next);
-                return;
-            }
-            ret.setComplete(out, next);
         });
         return ret;
     }
 
     @Override
-    public Future<T> failConvert(FailConvertCallback<T> fail) {
-        return failRecover(e -> new SimpleFuture<>(fail.fail(e)));
+    public Future<T> failConvert(final FailConvertCallback<T> fail) {
+        return failRecover(new FailRecoverCallback<T>() {
+            @Override
+            public Future<T> fail(Exception e) throws Exception {
+                return new SimpleFuture<>(fail.fail(e));
+            }
+        });
     }
 
     @Override

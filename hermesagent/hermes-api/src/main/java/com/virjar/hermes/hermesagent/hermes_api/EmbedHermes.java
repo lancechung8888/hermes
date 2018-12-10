@@ -4,6 +4,7 @@ import android.util.Log;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.koushikdutta.async.AsyncServer;
 import com.koushikdutta.async.http.server.AsyncHttpServer;
 import com.koushikdutta.async.http.server.AsyncHttpServerRequest;
@@ -14,8 +15,8 @@ import com.virjar.xposed_extention.ReflectUtil;
 import com.virjar.xposed_extention.SharedObject;
 
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import lombok.extern.slf4j.Slf4j;
@@ -59,7 +60,7 @@ public class EmbedHermes {
             }
         }
         if (agentCallback instanceof MultiActionWrapper) {
-            ArrayList<ActionRequestHandler> actionRequestHandlers = MultiActionWrapperFactory.scanActionWrappers(basePackage, MultiActionWrapperFactory.bindApkLocation(loader.getClassLoader()));
+            ArrayList<ActionRequestHandler> actionRequestHandlers = MultiActionWrapperFactory.scanActionWrappers(basePackage, MultiActionWrapperFactory.bindApkLocation(loader.getClassLoader()), agentCallback.getClass().getClassLoader());
             if (actionRequestHandlers.size() == 0) {
                 throw new IllegalStateException("can not find any ActionRequestHandler");
             }
@@ -156,10 +157,20 @@ public class EmbedHermes {
             @Override
             public void onRequest(AsyncHttpServerRequest request, final AsyncHttpServerResponse response) {
                 String baseURL = localServerBaseURL();
-                Hashtable<String, ArrayList<Object>> actions = ReflectUtil.getFieldValue(server, "mActions");
+                ArrayList<Object> routes = ReflectUtil.getFieldValue(server, "routes");
+                Map<String, ArrayList<Object>> actions = Maps.newHashMap();
+                for (Object route : routes) {
+                    String method = ReflectUtil.getFieldValue(route, "method");
+                    ArrayList<Object> urlList = actions.get(method);
+                    if (urlList == null) {
+                        urlList = Lists.newArrayList();
+                        actions.put(method, urlList);
+                    }
+                    urlList.add(route);
+                }
                 StringBuilder html = new StringBuilder("<html><head><meta charset=\"UTF-8\"><title>Hermes</title></head><body><p>HermesAgent ，项目地址：<a href=\"https://gitee.com/virjar/hermesagent\">https://gitee.com/virjar/hermesagent</a></p>");
                 html.append("<p>服务base地址：").append(baseURL).append("</p>");
-                for (Hashtable.Entry<String, ArrayList<Object>> entry : actions.entrySet()) {
+                for (Map.Entry<String, ArrayList<Object>> entry : actions.entrySet()) {
                     html.append("<p>httpMethod:").append(entry.getKey()).append("</p>");
                     html.append("<ul>");
                     for (Object object : entry.getValue()) {

@@ -280,6 +280,7 @@ public class FontService extends Service {
             mCallbacks.register(hookAgentService);
             allRemoteHookService.putIfAbsent(agentInfo.getServiceAlis(), hookAgentService);
             if (reportTask != null) {
+                //本地测试模式下，不存在reportTask
                 reportTask.report();
             }
         }
@@ -291,7 +292,7 @@ public class FontService extends Service {
         }
 
         @Override
-        public List<String> onlineService() throws RemoteException {
+        public List<String> onlineService() {
             return Lists.newArrayList(onlineAgentServices());
         }
     };

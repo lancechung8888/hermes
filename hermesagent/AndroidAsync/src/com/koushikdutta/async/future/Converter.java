@@ -50,15 +50,23 @@ public class Converter<R> {
 
             // this marks the conversion as "complete". the conversion will start
             // as soon as the value is ready.
-            setComplete(new MimedData<>(converted, mimeReplace(mime, converterMime)));
+            setComplete(new MimedData<Future<T>>(converted, mimeReplace(mime, converterMime)));
 
             // wait on the incoming value and convert it
-            converting.data.thenConvert(data -> converter.convert(data, mime)).
-            setCallback((e, result1) -> {
-                if (e != null)
-                    converted.setComplete(e);
-                else
-                    converted.setComplete(result1);
+            converting.data.thenConvert(new ThenCallback<Future<T>, F>() {
+                @Override
+                public Future<T> then(F data) throws Exception {
+                    return converter.convert(data, mime);
+                }
+            }).
+            setCallback(new FutureCallback<Future<T>>() {
+                @Override
+                public void onCompleted(Exception e, Future<T> result1) {
+                    if (e != null)
+                        converted.setComplete(e);
+                    else
+                        converted.setComplete(result1);
+                }
             });
         }
     }
@@ -204,7 +212,13 @@ public class Converter<R> {
                 current = next;
             }
 
-            return ((MultiTransformer<T, Object>)current.transformer).then(from -> from.data);
+            return ((MultiTransformer<T, Object>)current.transformer).then(new ThenFutureCallback<T, MimedData<Future<T>>>() {
+                @Override
+                public Future<T> then(MimedData<Future<T>> from) throws Exception {
+                    //from -> from.data
+                    return from.data;
+                }
+            });
         }
 
         return new SimpleFuture<>(new InvalidObjectException("unable to find converter"));
@@ -286,7 +300,12 @@ public class Converter<R> {
 
     private static final String MIME_ALL = "*/*";
     public <T> Future<T> to(final Class<T> clazz, final String mime) {
-        return future.then(from -> to(from, clazz ,mime));
+        return future.then(new ThenFutureCallback<T, R>() {
+            @Override
+            public Future<T> then(R from) throws Exception {
+                return to(from, clazz ,mime);
+            }
+        });
     }
 
     static class ConverterEntry<F, T> {
@@ -336,17 +355,59 @@ public class Converter<R> {
     private static ConverterMap Converters = new ConverterMap();
 
     static {
-        final TypeConverter<byte[], String> StringToByteArray = (from, fromMime) -> new SimpleFuture<>(from.getBytes());
+        final TypeConverter<byte[], String> StringToByteArray = new TypeConverter<byte[], String>() {
+            @Override
+            public Future<byte[]> convert(String from, String fromMime) throws Exception {
+                return new SimpleFuture<>(from.getBytes());
+            }
+        };
 
-        final TypeConverter<ByteBufferList, byte[]> ByteArrayToByteBufferList = (from, fromMime) -> new SimpleFuture<>(new ByteBufferList(from));
+        final TypeConverter<ByteBufferList, byte[]> ByteArrayToByteBufferList = new TypeConverter<ByteBufferList, byte[]>() {
+            @Override
+            public Future<ByteBufferList> convert(byte[] from, String fromMime) throws Exception {
+                return new SimpleFuture<>(new ByteBufferList(from));
+            }
+        };
 
-        final TypeConverter<ByteBuffer, byte[]> ByteArrayToByteBuffer = (from, fromMime) -> new SimpleFuture<>(ByteBufferList.deepCopy(ByteBuffer.wrap(from)));
+        final TypeConverter<ByteBuffer, byte[]> ByteArrayToByteBuffer = new TypeConverter<ByteBuffer, byte[]>() {
+            @Override
+            public Future<ByteBuffer> convert(byte[] from, String fromMime) throws Exception {
+                return new SimpleFuture<>(ByteBufferList.deepCopy(ByteBuffer.wrap(from)));
+            }
+        };
 
-        final TypeConverter<ByteBufferList, ByteBuffer> ByteBufferToByteBufferList = (from, fromMime) -> new SimpleFuture<>(new ByteBufferList(ByteBufferList.deepCopy(from)));
+        final TypeConverter<ByteBufferList, ByteBuffer> ByteBufferToByteBufferList = new TypeConverter<ByteBufferList, ByteBuffer>() {
+            @Override
+            public Future<ByteBufferList> convert(ByteBuffer from, String fromMime) throws Exception {
+                return new SimpleFuture<>(new ByteBufferList(ByteBufferList.deepCopy(from)));
+            }
+        };
 
-        final TypeConverter<JSONObject, String> StringToJSONObject = (from, fromMime) -> new SimpleFuture<>(from).thenConvert(JSONObject::new);
+        final TypeConverter<JSONObject, String> StringToJSONObject = new TypeConverter<JSONObject, String>() {
+            @Override
+            public Future<JSONObject> convert(String from, String fromMime) throws Exception {
+                //(from, fromMime) -> new SimpleFuture<>(from).thenConvert(JSONObject::new)
+                return new SimpleFuture<>(from).thenConvert(new ThenCallback<JSONObject, String>() {
+                    @Override
+                    public JSONObject then(String from) throws Exception {
+                        return new JSONObject(from);
+                    }
+                });
+            }
+        };
 
-        final TypeConverter<String, JSONObject> JSONObjectToString = (from, fromMime) -> new SimpleFuture<>(from).thenConvert(JSONObject::toString);
+        final TypeConverter<String, JSONObject> JSONObjectToString = new TypeConverter<String, JSONObject>() {
+            @Override
+            public Future<String> convert(JSONObject from, String fromMime) throws Exception {
+                //(from, fromMime) -> new SimpleFuture<>(from).thenConvert(JSONObject::toString)
+                return new SimpleFuture<>(from).thenConvert(new ThenCallback<String, JSONObject>() {
+                    @Override
+                    public String then(JSONObject from) throws Exception {
+                        return from.toString();
+                    }
+                });
+            }
+        };
 
         Converters.addConverter(ByteBuffer.class, null, ByteBufferList.class, null, ByteBufferToByteBufferList);
         Converters.addConverter(String.class, null, byte[].class, null, StringToByteArray);

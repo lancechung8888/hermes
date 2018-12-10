@@ -175,18 +175,6 @@ public class EmbedRPCInvokeCallback implements HttpServerRequestCallback {
         if (requestBody instanceof JSONObjectBody) {
             JSONObjectBody jsonObjectBody = (JSONObjectBody) requestBody;
             JSONObject jsonObject = jsonObjectBody.get();
-            String hermes_inner_render_content = jsonObject.optString("__hermes_inner_render_content");
-            if (hermes_inner_render_content != null) {
-                try {
-                    Class.forName("com.virjar.ucrack.plugin.LogUtil").getDeclaredMethod("outLog", String.class, String.class).invoke(null,
-                            "receive html from inner push", hermes_inner_render_content);
-
-                    Class.forName("com.virjar.ucrack.plugin.LogUtil").getDeclaredMethod("outLog", String.class, String.class).invoke(null,
-                            "receive json body from inner push", jsonObject.toString());
-                } catch (Throwable t) {
-                    //ignore
-                }
-            }
             return new InvokeRequest(jsonObject.toString(), null, requestSession);
         }
 

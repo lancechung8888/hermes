@@ -100,6 +100,9 @@ public class HotLoadPackageEntry {
         }
         final EmbedWrapper wrapper = callbackMap.values().iterator().next();
         try {
+            if (!wrapper.needHook(loadPackageParam)) {
+                return;
+            }
             setupInternalComponent();
             final String wrapperName;
             if (wrapper instanceof ExternalWrapper) {
@@ -275,9 +278,10 @@ public class HotLoadPackageEntry {
                     continue;
                 }
                 AgentCallback agentCallback = subClassVisitor.getSubClass().get(0).newInstance();
-                if (agentCallback instanceof ExternalWrapper && ((ExternalWrapper) agentCallback).getDelegate() instanceof MultiActionWrapper) {
-                    MultiActionWrapper multiActionWrapper = (MultiActionWrapper) ((ExternalWrapper) agentCallback).getDelegate();
-                    ArrayList<ActionRequestHandler> requestHandlers = MultiActionWrapperFactory.scanActionWrappers(packageName, apkFilePath);
+                if (agentCallback instanceof MultiActionWrapper) {
+                    log.info("weijia", "multiAction wrapper found,now scan action request handler");
+                    MultiActionWrapper multiActionWrapper = (MultiActionWrapper) agentCallback;
+                    ArrayList<ActionRequestHandler> requestHandlers = MultiActionWrapperFactory.scanActionWrappers(packageName, apkFilePath, agentCallback.getClass().getClassLoader());
                     if (requestHandlers.size() == 0) {
                         Log.e("weijia", "can not find any action request implement in ak file:" + apkFilePath.getAbsoluteFile());
                         return null;
@@ -287,6 +291,7 @@ public class HotLoadPackageEntry {
                             multiActionWrapper.registryHandler(actionRequestHandler);
                         } catch (Exception e) {
                             //ignore
+                            log.warn("register handler:{} failed", actionRequestHandler, e);
                         }
                     }
                 }

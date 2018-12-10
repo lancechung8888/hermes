@@ -42,7 +42,7 @@ public class MultiActionWrapperFactory {
      * @param scanBasePackage    注册基于扫描机制，需要提供一个base路径
      */
     public static void registerActionHandlers(MultiActionWrapper multiActionWrapper, String scanBasePackage) {
-        ArrayList<ActionRequestHandler> actionRequestHandlers = scanActionWrappers(scanBasePackage, bindApkLocation(multiActionWrapper.getClass().getClassLoader()));
+        ArrayList<ActionRequestHandler> actionRequestHandlers = scanActionWrappers(scanBasePackage, bindApkLocation(multiActionWrapper.getClass().getClassLoader()), multiActionWrapper.getClass().getClassLoader());
         if (actionRequestHandlers.size() == 0) {
             throw new IllegalStateException("can not find action handler implement for base package: " + scanBasePackage);
         }
@@ -52,9 +52,9 @@ public class MultiActionWrapperFactory {
     }
 
 
-    public static ArrayList<ActionRequestHandler> scanActionWrappers(String packageName, File apkFilePath) {
+    public static ArrayList<ActionRequestHandler> scanActionWrappers(String packageName, File apkFilePath, ClassLoader classLoader) {
         ClassScanner.AnnotationClassVisitor annotationClassVisitor = new ClassScanner.AnnotationClassVisitor(WrapperAction.class);
-        ClassScanner.scan(annotationClassVisitor, Sets.newHashSet(packageName), apkFilePath);
+        ClassScanner.scan(annotationClassVisitor, Sets.newHashSet(packageName), apkFilePath, classLoader);
 
         return Lists.newArrayList(Iterables.filter(Iterables.transform(Iterables.filter(annotationClassVisitor.getClassSet(), new Predicate<Class>() {
             @Override
@@ -132,7 +132,7 @@ public class MultiActionWrapperFactory {
 
 
     public static MultiActionWrapper createWrapperByAction(String packageName, File apkFilePath) {
-        ArrayList<ActionRequestHandler> actionRequestHandlers = scanActionWrappers(packageName, apkFilePath);
+        ArrayList<ActionRequestHandler> actionRequestHandlers = scanActionWrappers(packageName, apkFilePath, null);
         if (actionRequestHandlers.size() == 0) {
             return null;
         }

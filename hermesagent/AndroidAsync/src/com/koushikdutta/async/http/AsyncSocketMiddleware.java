@@ -15,8 +15,10 @@ import com.koushikdutta.async.future.FutureCallback;
 import com.koushikdutta.async.future.Futures;
 import com.koushikdutta.async.future.SimpleCancellable;
 import com.koushikdutta.async.future.SimpleFuture;
+import com.koushikdutta.async.future.ThenFutureCallback;
 import com.koushikdutta.async.util.ArrayDeque;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Hashtable;
 import java.util.Locale;
@@ -194,34 +196,57 @@ public class AsyncSocketMiddleware extends SimpleMiddleware {
         final SimpleFuture<AsyncSocket> checkedReturnValue = new SimpleFuture<>();
 
         Future<AsyncSocket> socket = mClient.getServer().getAllByName(uri.getHost())
-        .then(addresses -> Futures.loopUntil(addresses, address -> {
-            SimpleFuture<AsyncSocket> loopResult = new SimpleFuture<>();
+        .then(new ThenFutureCallback<AsyncSocket, InetAddress[]>() {
+            @Override
+            public Future<AsyncSocket> then(InetAddress[] addresses) throws Exception {
+                 return Futures.loopUntil(addresses, new ThenFutureCallback<AsyncSocket, InetAddress>() {
+                    @Override
+                    public Future<AsyncSocket> then(InetAddress address) throws Exception {
+                        final SimpleFuture<AsyncSocket> loopResult = new SimpleFuture<>();
 
-            final String inetSockAddress = String.format(Locale.ENGLISH, "%s:%s", address, port);
-            data.request.logv("attempting connection to " + inetSockAddress);
+                        final String inetSockAddress = String.format(Locale.ENGLISH, "%s:%s", address, port);
+                        data.request.logv("attempting connection to " + inetSockAddress);
 
-            mClient.getServer().connectSocket(new InetSocketAddress(address, port), loopResult::setComplete);
-            return loopResult;
-        }))
+                        mClient.getServer().connectSocket(new InetSocketAddress(address, port), new ConnectCallback() {
+                            @Override
+                            public void onConnectCompleted(Exception ex, AsyncSocket socket) {
+                                //loopResult::setComplete
+                                loopResult.setComplete(ex, socket);
+                            }
+                        });
+                        return loopResult;
+
+                    }
+                });
+            }
+        })
         // handle failures here (wrap the callback)
-        .fail(e -> wrapCallback(data, uri, port, false, data.connectCallback).onConnectCompleted(e, null));
+        .fail(new FailCallback() {
+            @Override
+            public void fail(Exception e) throws Exception {
+                 wrapCallback(data, uri, port, false, data.connectCallback).onConnectCompleted(e, null);
+            }
+        });
 
         checkedReturnValue.setComplete(socket)
-        .setCallback((e, successfulSocket) -> {
-            if (successfulSocket == null)
-                return;
-            // SimpleFuture.setComplete(Future) returns a future as to whether
-            // the completion was successful, or the future has been cancelled,
-            // thus the completion failed.
-            // The exception value will only ever be a CancellationException.
-            if (e == null) {
-                // handle successes here (wrap the callback)
-                wrapCallback(data, uri, port, false, data.connectCallback).onConnectCompleted(null, successfulSocket);
-                return;
+        .setCallback(new FutureCallback<AsyncSocket>() {
+            @Override
+            public void onCompleted(Exception e, AsyncSocket successfulSocket) {
+                if (successfulSocket == null)
+                    return;
+                // SimpleFuture.setComplete(Future) returns a future as to whether
+                // the completion was successful, or the future has been cancelled,
+                // thus the completion failed.
+                // The exception value will only ever be a CancellationException.
+                if (e == null) {
+                    // handle successes here (wrap the callback)
+                    wrapCallback(data, uri, port, false, data.connectCallback).onConnectCompleted(null, successfulSocket);
+                    return;
+                }
+                data.request.logd("Recycling extra socket leftover from cancelled operation");
+                idleSocket(successfulSocket);
+                recycleSocket(successfulSocket, data.request);
             }
-            data.request.logd("Recycling extra socket leftover from cancelled operation");
-            idleSocket(successfulSocket);
-            recycleSocket(successfulSocket, data.request);
         });
 
         return checkedReturnValue;

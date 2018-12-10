@@ -4,6 +4,7 @@ import com.koushikdutta.async.DataEmitter;
 import com.koushikdutta.async.DataSink;
 import com.koushikdutta.async.callback.CompletedCallback;
 import com.koushikdutta.async.future.Future;
+import com.koushikdutta.async.future.ThenCallback;
 
 import org.json.JSONObject;
 
@@ -15,7 +16,13 @@ import java.lang.reflect.Type;
 public class JSONObjectParser implements AsyncParser<JSONObject> {
     @Override
     public Future<JSONObject> parse(DataEmitter emitter) {
-        return new StringParser().parse(emitter).thenConvert(JSONObject::new);
+        return new StringParser().parse(emitter).thenConvert(new ThenCallback<JSONObject, String>() {
+            @Override
+            public JSONObject then(String from) throws Exception {
+                //JSONObject::new
+                return new JSONObject(from);
+            }
+        });
     }
 
     @Override

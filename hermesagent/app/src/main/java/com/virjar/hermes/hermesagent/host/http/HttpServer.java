@@ -39,7 +39,6 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -204,12 +203,23 @@ public class HttpServer {
             @Override
             public void onRequest(AsyncHttpServerRequest request, final AsyncHttpServerResponse response) {
                 String baseURL = CommonUtils.localServerBaseURL();
-                Hashtable<String, ArrayList<Object>> actions = ReflectUtil.getFieldValue(server, "mActions");
+                //这是因为async内部的api变化很大，感觉会有一次不兼容的升级
+                ArrayList<Object> routes = ReflectUtil.getFieldValue(server, "routes");
+                Map<String, ArrayList<Object>> actions = Maps.newHashMap();
+                for (Object route : routes) {
+                    String method = ReflectUtil.getFieldValue(route, "method");
+                    ArrayList<Object> urlList = actions.get(method);
+                    if (urlList == null) {
+                        urlList = Lists.newArrayList();
+                        actions.put(method, urlList);
+                    }
+                    urlList.add(route);
+                }
                 StringBuilder html = new StringBuilder("<html><head><meta charset=\"UTF-8\"><title>Hermes</title></head><body><p>HermesAgent ，项目地址：<a href=\"https://gitee.com/virjar/hermes\">https://gitee.com/virjar/hermes</a></p>");
                 html.append("<p>服务base地址：").append(baseURL).append("</p>");
                 html.append("<p>agent版本：").append(BuildConfig.VERSION_CODE).append("</p>");
                 html.append("<p>设备ID：").append(CommonUtils.deviceID(HttpServer.this.fontService)).append("</p>");
-                for (Hashtable.Entry<String, ArrayList<Object>> entry : actions.entrySet()) {
+                for (Map.Entry<String, ArrayList<Object>> entry : actions.entrySet()) {
                     html.append("<p>httpMethod:").append(entry.getKey()).append("</p>");
                     html.append("<ul>");
                     for (Object object : entry.getValue()) {

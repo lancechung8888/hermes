@@ -29,12 +29,24 @@ public class Futures {
     }
 
 
-    private static <T, F> void loopUntil(final Iterator<F> values, ThenFutureCallback<T, F> callback, SimpleFuture<T> ret, Exception lastException) {
+    private static <T, F> void loopUntil(final Iterator<F> values, final ThenFutureCallback<T, F> callback, final SimpleFuture<T> ret, Exception lastException) {
         while (values.hasNext()) {
             try {
                 callback.then(values.next())
-                        .success(ret::setComplete)
-                        .fail(e -> loopUntil(values, callback, ret, e));
+                        .success(new SuccessCallback<T>() {
+                            @Override
+                            public void success(T value) throws Exception {
+                                //ret::setComplete
+                                ret.setComplete(value);
+                            }
+                        })
+                        .fail(new FailCallback() {
+                            @Override
+                            public void fail(Exception e) throws Exception {
+                                //e -> loopUntil(values, callback, ret, e)
+                                loopUntil(values,callback,ret,e);
+                            }
+                        });
                 return;
             } catch (Exception e) {
                 lastException = e;
