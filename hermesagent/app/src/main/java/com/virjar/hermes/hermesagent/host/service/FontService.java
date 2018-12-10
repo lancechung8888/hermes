@@ -279,7 +279,9 @@ public class FontService extends Service {
             log.info("service :{} register success", agentInfo.getPackageName());
             mCallbacks.register(hookAgentService);
             allRemoteHookService.putIfAbsent(agentInfo.getServiceAlis(), hookAgentService);
-            reportTask.report();
+            if (reportTask != null) {
+                reportTask.report();
+            }
         }
 
         @Override
