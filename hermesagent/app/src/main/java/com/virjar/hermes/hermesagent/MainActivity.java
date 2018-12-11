@@ -91,31 +91,34 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void updateStatus() {
-        this.runOnUiThread(() -> {
-            TextView tv = findViewById(R.id.sample_text);
-            String text;
-            if (CommonUtils.xposedStartSuccess) {
-                text = "接口地址：" + CommonUtils.localServerBaseURL();
-                if (mService != null) {
-                    try {
-                        text += "\n\n在线服务列表:\n"
-                                + Joiner.on("\n").join(mService.onlineService());
-                    } catch (RemoteException e) {
-                        text += "获取服务列表失败";
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                TextView tv = findViewById(R.id.sample_text);
+                String text;
+                if (CommonUtils.xposedStartSuccess) {
+                    text = "接口地址：" + CommonUtils.localServerBaseURL();
+                    if (mService != null) {
+                        try {
+                            text += "\n\n在线服务列表:\n"
+                                    + Joiner.on("\n").join(mService.onlineService());
+                        } catch (RemoteException e) {
+                            text += "获取服务列表失败";
+                        }
                     }
+                } else {
+                    text = "xposed中，未正常启动HermesAgent模块";
                 }
-            } else {
-                text = "xposed中，未正常启动HermesAgent模块";
+                if (!CommonUtils.isSuAvailable() && !CommonUtils.requestSuPermission()) {
+                    text += "\n  HermesAgent需要root权限，请放开HermesAgent的root授权";
+                }
+                text += "\n\nAndroidId: " + CommonUtils.deviceID(MainActivity.this);
+                text += "\n\nagent版本：" + BuildConfig.VERSION_CODE;
+                if (CommonUtils.isLocalTest()) {
+                    text += "\n\n本地测试版本";
+                }
+                tv.setText(text);
             }
-            if (!CommonUtils.isSuAvailable() && !CommonUtils.requestSuPermission()) {
-                text += "\n  HermesAgent需要root权限，请放开HermesAgent的root授权";
-            }
-            text += "\n\nAndroidId: " + CommonUtils.deviceID(MainActivity.this);
-            text += "\n\nagent版本：" + BuildConfig.VERSION_CODE;
-            if (CommonUtils.isLocalTest()) {
-                text += "\n\n本地测试版本";
-            }
-            tv.setText(text);
         });
     }
 
