@@ -11,8 +11,8 @@ https://docs.djangoproject.com/en/1.7/ref/settings/
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
@@ -24,7 +24,6 @@ DEBUG = True
 TEMPLATE_DEBUG = True
 
 ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -41,7 +40,7 @@ INSTALLED_APPS = (
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -51,7 +50,6 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'hermes.urls'
 
 WSGI_APPLICATION = 'backend_python.wsgi.application'
-
 
 # Database
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
@@ -65,17 +63,16 @@ WSGI_APPLICATION = 'backend_python.wsgi.application'
 # }
 
 DATABASES = {
-    'local':{
+    'local': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'django_hermes',
-        'USER': 'root',
-        'PASSWORD': 'xulei2048',
-        'HOST': '127.0.0.1',
+        'NAME': 'hermes',
+        'USER': 'maojingwen',
+        'PASSWORD': 'maojingwen_passwd',
+        'HOST': '172.16.3.114',
         'PORT': '3306',
     },
 }
 DATABASES['default'] = DATABASES['local']
-
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
@@ -89,7 +86,6 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.7/howto/static-files/
@@ -124,7 +120,7 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename':  BASE_DIR+'/default.log',
+            'filename': BASE_DIR + '/default.log',
         },
 
         # 'console':{
@@ -147,4 +143,6 @@ LOGGING = {
     },
 }
 
+SECRET_KEY = 'bk=5-o+^bfdga*y$s4xt48%ju&v678(he!v930^oq3siq+f+35'
 
+upload_path = 'C:\\Users\\DK\Desktop\hermes\\backend-python\\upload'

@@ -15,16 +15,17 @@ from hermes.models.HermesModels import HermesTargetAPP
 from hermes.views.HermesUtil import ResponseContainer, ForceDumpJsonResponse, to_boolean
 
 logger = logging.getLogger(__name__)
-
+from backend_python.settings import upload_path
 # from pytos import tos
 from django import http
+
+
 # from pyutil.program.fmtutil import fmt_exception
 
 
 class UploadTargetApkView(View):
     def __init__(self, **kwargs):
         super(UploadTargetApkView, self).__init__(**kwargs)
-        self.client = tos.TosClient(settings.bucket, settings.accessKey, cluster="default", timeout=10)
 
     def post(self, request):
         apk_file = request.FILES['agentAPK']
@@ -57,12 +58,13 @@ class UploadTargetApkView(View):
             return ForceDumpJsonResponse(ResponseContainer.failed(error_message))
 
         # now gen a file name id,for tos storage
-        tos_id = 'hermes_target_app_' + urllib.quote(apk_package) + '_' + version_code + '_' + urllib.quote(
+        file_name = 'hermes_target_app_' + urllib.quote(apk_package) + '_' + version_code + '_' + urllib.quote(
             version_name) + '.apk'
-        f = open(temp_apk_file, 'rb')
-
+        save_file_path = upload_path + '\\' + file_name
         try:
-            self.client.put_object(tos_id, f.read())
+            with open(temp_apk_file, 'rb') as fr:
+                with open(save_file_path, "wb") as fw:
+                    fw.write(fr.read())
         except Exception as e:
             logger.error('upload to tos platform failed', exc_info=True)
             return ForceDumpJsonResponse(
@@ -70,14 +72,15 @@ class UploadTargetApkView(View):
         finally:
             f.close()
         os.remove(temp_apk_file)
-        tos_url = 'http://tosv.byted.org/obj/' + settings.bucket + '/' + tos_id
-        logger.info('apk文件上传到tos平台，下载地址为：%s' % tos_url)
+        # tos_url = '/hermes/targetApp/download?apkId='
+        # logger.info('apk文件上传到tos平台，下载地址为：%s' % tos_url)
         hermes_target_app = {
             'name': apk_package,
             'appPackage': apk_package,
             'versionCode': version_code,
             'version': version_name,
-            'downloadUrl': tos_url,
+            'savePath':save_file_path,
+            'downloadUrl': None,
             'enabled': True
         }
         hermes_target_app = HermesTargetAPP.objects.update_or_create(appPackage=apk_package,
