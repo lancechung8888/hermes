@@ -14,9 +14,12 @@ logger = logging.getLogger(__name__)
 # from pyutil import pyredis
 import redis
 from redis.exceptions import ResponseError
+
 # 设置本地连接池
-pool = redis.ConnectionPool(host='127.0.0.1',port=6379,password='123456',decode_responses=True)
+pool = redis.ConnectionPool(host='127.0.0.1', port=6379, decode_responses=True)
 redis_client = redis.Redis(connection_pool=pool)
+
+
 # redis_client = pyredis.make_redis_client('toutiao.redis.crawl_vertical')
 
 

@@ -353,7 +353,7 @@ public class FontService extends Service {
 
         log.info("start hermes font service");
         if (allCallback == null) {
-            scanCallBack();
+            //scanCallBack();
         }
 
         //确保HermesAgent后台联网正常
