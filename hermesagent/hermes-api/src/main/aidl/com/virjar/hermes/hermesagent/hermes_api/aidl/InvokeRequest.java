@@ -5,10 +5,14 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
 import com.google.common.base.Charsets;
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import com.virjar.hermes.hermesagent.hermes_api.APICommonUtils;
@@ -21,6 +25,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
+
+import javax.annotation.Nullable;
 
 /**
  * Created by virjar on 2018/8/23.
@@ -177,6 +183,26 @@ public class InvokeRequest implements Parcelable {
             return nameValuePairsModel.get(name);
         }
         if (jsonModel != null) {
+            Object o = jsonModel.get(name);
+            if (o instanceof CharSequence) {
+                return Lists.newArrayList(o.toString());
+            } else if (o instanceof JSONArray) {
+                return Lists.newArrayList(Iterables.filter(Iterables.transform((JSONArray) o, new Function<Object, String>() {
+                    @Nullable
+                    @Override
+                    public String apply(@Nullable Object input) {
+                        if (input instanceof CharSequence) {
+                            return input.toString();
+                        }
+                        return null;
+                    }
+                }), new Predicate<String>() {
+                    @Override
+                    public boolean apply(@Nullable String input) {
+                        return input != null;
+                    }
+                }));
+            }
             return Lists.newArrayList(jsonModel.getString(name));
         }
         throw new IllegalStateException("parameter parse failed");

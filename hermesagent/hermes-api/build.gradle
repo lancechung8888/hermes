@@ -7,7 +7,7 @@ android {
         minSdkVersion 19
         targetSdkVersion 28
         versionCode 7
-        versionName "1.0.6-SNAPSHOT"
+        versionName "1.0.6"
 
     }
 
@@ -50,14 +50,14 @@ dependencies {
     //日志模块
     api 'org.slf4j:slf4j-api:1.7.25'
     api 'com.github.tony19:logback-android:1.3.0-2'
-    api 'com.virjar:xposed-extention:1.0.7-SNAPSHOT'
+    api 'com.virjar:xposed-extention:1.0.7'
 
     annotationProcessor 'org.projectlombok:lombok:1.18.2'
     compileOnly 'org.projectlombok:lombok:1.18.2'
 
     api 'com.squareup.okhttp3:okhttp:3.10.0'
     //api project(':AndroidAsync')
-    api 'com.virjar:AndroidAsync:1.0-SNAPSHOT'
+    api 'com.virjar:AndroidAsync:1.0'
 }
 //发布插件
 //参考 https://github.com/qiujuer/BeFoot/tree/master/blog/gradle-mvn-push
