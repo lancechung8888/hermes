@@ -176,7 +176,7 @@ public class AgentWatchTask extends LoggerTimerTask {
                 iterator.remove();
 
                 if (testInstallApp.getTargetAppVersionCode() != packageInfo.versionCode) {
-                    log.info("target:{} app versionCode update, uninstall it", testInstallApp.getTargetAppPackage());
+                    log.info("target:{} app versionCode update, uninstall it,target App version code:{}  now Version Code:{}", testInstallApp.getTargetAppPackage(),testInstallApp.getTargetAppVersionCode(),packageInfo.versionCode);
                     needUnInstallApps.add(testInstallApp);
                     continue;
                 }
