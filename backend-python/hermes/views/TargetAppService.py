@@ -15,8 +15,8 @@ from hermes.models.HermesModels import HermesTargetAPP
 from hermes.views.HermesUtil import ResponseContainer, ForceDumpJsonResponse, to_boolean
 
 logger = logging.getLogger(__name__)
-from backend_python.settings import upload_path
-# from pytos import tos
+from backend_python.utils import get_upload_path
+
 from django import http
 
 
@@ -60,7 +60,7 @@ class UploadTargetApkView(View):
         # now gen a file name id,for tos storage
         file_name = 'hermes_target_app_' + urllib.quote(apk_package) + '_' + version_code + '_' + urllib.quote(
             version_name) + '.apk'
-        save_file_path = upload_path + '\\' + file_name
+        save_file_path = get_upload_path('targetApp') + '\\' + file_name
         try:
             with open(temp_apk_file, 'rb') as fr:
                 with open(save_file_path, "wb") as fw:
@@ -72,14 +72,12 @@ class UploadTargetApkView(View):
         finally:
             f.close()
         os.remove(temp_apk_file)
-        # tos_url = '/hermes/targetApp/download?apkId='
-        # logger.info('apk文件上传到tos平台，下载地址为：%s' % tos_url)
         hermes_target_app = {
             'name': apk_package,
             'appPackage': apk_package,
             'versionCode': version_code,
             'version': version_name,
-            'savePath':save_file_path,
+            'savePath': save_file_path,
             'downloadUrl': None,
             'enabled': True
         }

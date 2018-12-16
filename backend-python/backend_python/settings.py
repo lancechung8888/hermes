@@ -145,4 +145,6 @@ LOGGING = {
 
 SECRET_KEY = 'bk=5-o+^bfdga*y$s4xt48%ju&v678(he!v930^oq3siq+f+35'
 
-upload_path = 'C:\\Users\\DK\Desktop\hermes\\backend-python\\upload'
+upload_path = None
+
+

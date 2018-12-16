@@ -11,14 +11,11 @@ from django.core.paginator import Paginator
 from django.views.generic import View
 
 from apkutils.apk import APK
-from backend_python import settings
+from backend_python.utils import get_upload_path
 from hermes.models.HermesModels import HermesWrapperAPK
 from hermes.views.HermesUtil import ResponseContainer, ForceDumpJsonResponse, to_boolean
 
 logger = logging.getLogger(__name__)
-
-# from pytos import tos
-# from pyutil.program.fmtutil import fmt_exception
 
 no_hermes_target_package_define_error_message = """
 error apk file,meta-data{hermes_target_package=wrapper for target app} define in AndroidManifest.xml
@@ -28,7 +25,6 @@ error apk file,meta-data{hermes_target_package=wrapper for target app} define in
 class UploadHermesWrapperApkView(View):
     def __init__(self, **kwargs):
         super(UploadHermesWrapperApkView, self).__init__(**kwargs)
-        self.client = tos.TosClient(settings.bucket, settings.accessKey, cluster="default", timeout=10)
 
     @staticmethod
     def parse_target_package_name(manifest):
@@ -88,20 +84,24 @@ class UploadHermesWrapperApkView(View):
         # now gen a file name id,for tos storage
         tos_id = 'hermes_wrapper_app_' + urllib.quote(apk_package) + '_' + version_code + '_' + urllib.quote(
             version_name) + '.apk'
-        f = open(temp_apk_file, 'rb')
+        file_name = 'hermes_wrapper_app_' + urllib.quote(apk_package) + '_' + version_code + '_' + urllib.quote(
+            version_name) + '.apk'
+        save_file_path = get_upload_path('wrapper') + '\\' + file_name
         try:
-            self.client.put_object(tos_id, f.read())
-        except Exception:
-            logger.error('upload to tos platform failed', exc_info=True)
-            return ForceDumpJsonResponse(ResponseContainer.failed("upload to tos platform failed"))
+            with open(temp_apk_file, 'rb') as fr:
+                with open(save_file_path, "wb") as fw:
+                    fw.write(fr.read())
+        except Exception as e:
+            logger.error('upload to  hermesAdmin failed', exc_info=True)
+            return ForceDumpJsonResponse(
+                ResponseContainer.failed('upload to tos platform failed %s' % e))
         finally:
             f.close()
         os.remove(temp_apk_file)
-        tos_url = 'http://tosv.byted.org/obj/' + settings.bucket + '/' + tos_id
-        logger.info('apk文件上传到tos平台，下载地址为：%s' % tos_url)
         hermes_target_app = {
             'version': version_name,
-            'downloadUrl': tos_url,
+            'downloadUrl': None,
+            'savePath': save_file_path,
             'targetApkPackage': hermes_target_package,
             'enabled': False
         }

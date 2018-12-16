@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 # @Time : 2018/11/6
 # @Author : lei.X
+from  settings import BASE_DIR
+import os
 
 
 def map_dict(d, func, pkeys=[], atom_op=None):
@@ -28,3 +30,20 @@ def map_dict(d, func, pkeys=[], atom_op=None):
         return nd
     else:
         return atom_op(d, pkeys) if atom_op else d
+
+
+def get_upload_path(sub_dir=None):
+    the_upload_path = None
+    try:
+        from settings import upload_path
+        if upload_path:
+            the_upload_path = upload_path
+    except:
+        pass
+    if not the_upload_path:
+        the_upload_path = BASE_DIR + '/upload/'
+    if not sub_dir:
+        return the_upload_path
+    if str(sub_dir).startswith('/'):
+        sub_dir = sub_dir[1:]
+    return os.path.abspath(the_upload_path) + '/' + sub_dir

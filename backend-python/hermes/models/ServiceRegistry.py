@@ -11,7 +11,6 @@ from hermes.models.LinkList import DoublyLinkedList
 
 logger = logging.getLogger(__name__)
 
-# from pyutil import pyredis
 import redis
 from redis.exceptions import ResponseError
 
