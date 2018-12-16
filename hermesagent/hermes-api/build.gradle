@@ -65,7 +65,7 @@ apply from: 'gradle-mvn-push.gradle'
 
 
 //由于我们可能引用snapshot版本的API，此时gradle缓存导致无法加载到最新的依赖，此时可以打开如下注释，这样就不会走缓存
-configurations.all {
-    // check for updates every build
-    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
-}
+//configurations.all {
+//    // check for updates every build
+//    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+//}
