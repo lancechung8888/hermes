@@ -284,7 +284,7 @@ class RamServiceQueue(ServiceQueue):
             resource_entry.online = True
         self.set_up_poling_key(mac, resource_entry.score)
 
-    def set_up_poling_key(self, mac, score, old_score=0):
+    def set_up_poling_key(self, mac, score, old_score=float(0)):
         old_max_index = self.judge_index_by_score(old_score)
         # print 'set up poling key for mac:%s' % mac
         last_index = self.judge_index_by_score(score)
