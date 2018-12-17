@@ -147,4 +147,7 @@ SECRET_KEY = 'bk=5-o+^bfdga*y$s4xt48%ju&v678(he!v930^oq3siq+f+35'
 
 upload_path = None
 
-
+redis_queue_enable = False
+redis_host = '127.0.0.1'
+redis_port = 6379
+redis_auth = None
