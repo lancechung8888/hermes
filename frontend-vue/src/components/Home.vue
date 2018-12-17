@@ -8,7 +8,7 @@
                         <Col :span="12">
                             <div class="home-list-item home-list-item1">
                                 <a target="_blank"
-                                   href="https://gitee.com/virjar/hermesadmin">Hermes主页</a>
+                                   href="https://gitee.com/virjar/hermes">Hermes主页</a>
                             </div>
                         </Col>
                         <Col :span="12">

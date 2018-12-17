@@ -108,7 +108,7 @@ class RedisServiceQueue(ServiceQueue):
         last_index = self.judge_index_by_score(score)
 
         now_index = last_index
-        if now_index <= old_score:
+        if now_index < old_max_index:
             return
         queue_size = self.mac_size()
         all_polling_key = set(redis_client.lrange(self.queue_polling_key, 0, -1))
@@ -290,8 +290,6 @@ class RamServiceQueue(ServiceQueue):
         last_index = self.judge_index_by_score(score)
 
         now_index = last_index
-        if now_index <= old_score:
-            return
         # print 'last index:%d' % last_index
         queue_size = self.mac_size()
         all_polling_key = set(self.queue)
