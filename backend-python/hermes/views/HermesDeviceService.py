@@ -15,12 +15,9 @@ from hermes.models.HermesModels import HermesDevice, HermesDevicePackage, Servic
 from hermes.models.ServiceRegistry import registry
 from hermes.views.HermesUtil import ResponseContainer, ForceDumpJsonResponse
 
-# from frame import logger
-
 import logging
-logger = logging.getLogger(__name__)
 
-# from pyutil.program.fmtutil import fmt_exception
+logger = logging.getLogger(__name__)
 
 
 class ListDeviceView(View):
@@ -181,7 +178,8 @@ class InvokeHandlerView(View):
         time_out = request.GET.get('__hermes_invoke_timeOut')
 
         if request.method == 'GET' or (
-                content_type is not None and str(content_type).lower().startswith('application/x-www-form-urlencoded')):
+                        content_type is not None and str(content_type).lower().startswith(
+                    'application/x-www-form-urlencoded')):
             request_body = join_param(param_dir)
         elif request.method == 'POST' and content_type is not None and str(content_type).lower().startswith(
                 'application/json'):
@@ -225,7 +223,7 @@ class InvokeHandlerView(View):
             response = requests.post(request_url, data=request_body, headers={'Content-Type': content_type},
                                      timeout=time_out)
         except Exception as e:
-            logger.error("forward to device,network exception %s",e)
+            logger.error("forward to device,network exception %s", e)
             # 发生网络异常，那么对该资源进行动态降权
             registry.record_failed(mac, service)
             return ForceDumpJsonResponse(

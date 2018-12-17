@@ -5,10 +5,10 @@ import datetime
 from django.core.paginator import Page
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http.response import JsonResponse
-# from pyutil.program.python import map_dict
-from backend_python.utils import  map_dict
+from backend_python.utils import map_dict
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -113,7 +113,6 @@ def transfer_with_attribute(obj):
 
 
 class MyJSONEncoder(DjangoJSONEncoder):
-
     def default(self, obj):
         try:
             return super(DjangoJSONEncoder, self).default(obj)

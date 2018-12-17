@@ -131,10 +131,10 @@ class ListHermesWrapperApkView(View):
 
 class DownloadHermesWrapperApkView(View):
     def get(self, request):
+        #TODO
         apk_id = request.GET.get('apkId')
         if apk_id is None:
             return ForceDumpJsonResponse(ResponseContainer.failed("the parameter :{apkId} is not presented"))
-        logger.info("download apk is not support for toutiao hermes admin system,forward to tos platform")
         wrapper_apk = HermesWrapperAPK.objects.filter(id=apk_id).first()
         if wrapper_apk is None:
             return ForceDumpJsonResponse(ResponseContainer.failed("record not fond"))
