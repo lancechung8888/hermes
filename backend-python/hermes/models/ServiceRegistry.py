@@ -27,7 +27,7 @@ def create_redis_client():
         # TODO
         redis_auth['auth'] = redis_auth
     redis_param['decode_responses'] = True
-    pool = redis.ConnectionPool(redis_param)
+    pool = redis.ConnectionPool(**redis_param)
     return redis.Redis(connection_pool=pool)
 
 
@@ -35,7 +35,7 @@ try:
     redis_client = create_redis_client()
 except Exception as e:
     redis_client = None
-    logger.error("forward to device,network exception %s", e)
+    logger.error("create redis client failed,redis based queue will not enable %s", e)
 
 
 class ServiceQueue(object):
