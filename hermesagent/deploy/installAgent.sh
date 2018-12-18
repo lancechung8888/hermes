@@ -1,14 +1,17 @@
 function restartAdb()
 {
          echo "$1 restart adbd"
-         stop_url="http://$1:5597/executeCommand?useRoot=true&cmd=stop%20adbd"
-         echo ${stop_url}
-         stop_result=`curl --connect-timeout 2 ${stop_url}`
+         restart_url="http://$1:5597/restartAdbD"
+         echo ${restart_url}
+         curl --connect-timeout 2 ${restart_url}
          if [ ! $? -eq 0 ] ;then
             echo 'hermesServer is down ,devices offline'
             return 4
          fi
-         curl "http://$1:5597/executeCommand?useRoot=true&cmd=start%20adbd"
+         echo
+         echo "disconnect devices"
+         adb disconnect "$1:4555"
+         echo
 }
 
 function connect()
@@ -79,9 +82,9 @@ function check_version()
     fi
     getVersionUrl="http://${line}:5597/agentVersion"
     echo "curl ${getVersionUrl}"
-    version=`curl ${getVersionUrl}`
+    version=`curl --connect-timeout 2  ${getVersionUrl}`
     if [ ! $? -eq 0 ] ;then
-        return 0
+        return 2
     fi
     echo "agent version:${version}"
 
@@ -124,6 +127,12 @@ do
     if [[ ${line} == "#"* ]] ;then
         continue
     fi
+    check_version $1
+    check_version_result=$?
+    if [[ ${check_version_result} == 0  ]] ;then
+        continue
+    fi
+
     echo 'connect device' ${line}
     connect ${line}
 
@@ -145,6 +154,10 @@ do
 
     check_version $1
     check_version_result=$?
+    if [[ ${check_version_result} == 2  ]] ;then
+        offline_list[${#offline_list[@]}]=${line}
+        continue
+    fi
     if [[ ${check_version_result} == 0  ]] ;then
         continue
     fi

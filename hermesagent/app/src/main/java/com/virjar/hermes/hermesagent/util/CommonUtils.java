@@ -88,6 +88,32 @@ public class CommonUtils {
                 .build();
     }
 
+    public static Throwable getRootCase(Throwable throwable) {
+        Throwable cause = throwable.getCause();
+        if (cause != null) {
+            return getRootCase(cause);
+        }
+        return throwable;
+    }
+
+    public static void restartWifiModule(Context context) {
+        WifiManager wifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        if (wifiManager == null) {
+            log.warn("find wifiManager failed");
+            return;
+        }
+        //wifiManager.reassociate();
+        if (!wifiManager.isWifiEnabled()) {
+            log.info("wifi disabled already");
+        } else {
+            log.info("disable wifi");
+            wifiManager.setWifiEnabled(false);
+        }
+        log.info("enable wifi");
+        wifiManager.setWifiEnabled(true);
+//        wifiManager.reconnect();
+//        wifiManager.reassociate();
+    }
 
     public static String execCmd(String cmd, boolean useRoot) {
         log.info("execute command:{" + cmd + "} useRoot:" + useRoot);
@@ -294,6 +320,8 @@ public class CommonUtils {
             //check if adb running on 4555 port
             if (checkTcpAdbRunning()) {
                 log.info("the adb service already running on " + Constant.ADBD_PORT);
+                //TODO
+                //Shell.SU.run("adb root");
                 return;
             }
             if (!CommonUtils.isSuAvailable()) {

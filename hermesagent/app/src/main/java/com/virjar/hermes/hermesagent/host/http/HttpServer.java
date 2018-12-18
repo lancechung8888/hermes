@@ -23,6 +23,7 @@ import com.virjar.hermes.hermesagent.hermes_api.CommonRes;
 import com.virjar.hermes.hermesagent.hermes_api.Constant;
 import com.virjar.hermes.hermesagent.hermes_api.LogConfigurator;
 import com.virjar.hermes.hermesagent.hermes_api.aidl.IHookAgentService;
+import com.virjar.hermes.hermesagent.host.manager.DynamicRateLimitManager;
 import com.virjar.hermes.hermesagent.host.manager.StartAppTask;
 import com.virjar.hermes.hermesagent.host.service.FontService;
 import com.virjar.hermes.hermesagent.host.thread.J2Executor;
@@ -112,8 +113,8 @@ public class HttpServer {
         server = new AsyncHttpServer();
         mAsyncServer = new AsyncServer(Constant.httpServerLooperThreadName);
         j2Executor = new J2Executor(
-                new ThreadPoolExecutor(10, 10, 0L,
-                        TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(10), new NamedThreadFactory("httpServer-public-pool"))
+                new ThreadPoolExecutor(20, 20, 0L,
+                        TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(1), new NamedThreadFactory("httpServer-public-pool"))
         );
         httpServerRequestCallback = new RPCInvokeCallback(fontService, j2Executor);
         log.info("register http request handler");
@@ -152,6 +153,10 @@ public class HttpServer {
         } else {
             startupEventSet.add(httpServerStartupEvent);
         }
+    }
+
+    public void restartServer(Context context) {
+        startServerInternal(context);
     }
 
     public void startServer(final Context context) {
@@ -218,6 +223,7 @@ public class HttpServer {
                 StringBuilder html = new StringBuilder("<html><head><meta charset=\"UTF-8\"><title>Hermes</title></head><body><p>HermesAgent ，项目地址：<a href=\"https://gitee.com/virjar/hermes\">https://gitee.com/virjar/hermes</a></p>");
                 html.append("<p>服务base地址：").append(baseURL).append("</p>");
                 html.append("<p>agent版本：").append(BuildConfig.VERSION_CODE).append("</p>");
+                html.append("<p>系统状态评分：").append(DynamicRateLimitManager.getInstance().getLimitScore() * 100).append("</p>");
                 html.append("<p>设备ID：").append(CommonUtils.deviceID(HttpServer.this.fontService)).append("</p>");
                 for (Map.Entry<String, ArrayList<Object>> entry : actions.entrySet()) {
                     html.append("<p>httpMethod:").append(entry.getKey()).append("</p>");

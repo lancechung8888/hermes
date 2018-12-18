@@ -176,7 +176,7 @@ public class AgentWatchTask extends LoggerTimerTask {
                 iterator.remove();
 
                 if (testInstallApp.getTargetAppVersionCode() != packageInfo.versionCode) {
-                    log.info("target:{} app versionCode update, uninstall it,target App version code:{}  now Version Code:{}", testInstallApp.getTargetAppPackage(),testInstallApp.getTargetAppVersionCode(),packageInfo.versionCode);
+                    log.info("target:{} app versionCode update, uninstall it,target App version code:{}  now Version Code:{}", testInstallApp.getTargetAppPackage(), testInstallApp.getTargetAppVersionCode(), packageInfo.versionCode);
                     needUnInstallApps.add(testInstallApp);
                     continue;
                 }
@@ -247,6 +247,7 @@ public class AgentWatchTask extends LoggerTimerTask {
     private AgentInfo handleAgentHeartBeat(String targetPackageName, IHookAgentService hookAgentService) {
         //ping应该很快，如果25s都不能返回，那么肯定是假死了
         PingWatchTask pingWatchTask = new PingWatchTask(System.currentTimeMillis() + 1000 * 25, targetPackageName);
+        long start = System.currentTimeMillis();
         try {
             //如果targetApp假死，那么这个调用将会阻塞，需要监控这个任务的执行时间，如果长时间ping没有响应，那么需要强杀targetApp
             pingWatchTaskLinkedBlockingDeque.offer(pingWatchTask);
@@ -259,6 +260,7 @@ public class AgentWatchTask extends LoggerTimerTask {
         } finally {
             pingWatchTaskLinkedBlockingDeque.remove(pingWatchTask);
             pingWatchTask.isDone = true;
+            DynamicRateLimitManager.getInstance().recordPingDuration(System.currentTimeMillis() - start);
         }
         return null;
     }

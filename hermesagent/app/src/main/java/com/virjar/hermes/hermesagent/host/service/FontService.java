@@ -39,6 +39,7 @@ import com.virjar.hermes.hermesagent.hermes_api.aidl.IHookAgentService;
 import com.virjar.hermes.hermesagent.hermes_api.aidl.IServiceRegister;
 import com.virjar.hermes.hermesagent.host.http.HttpServer;
 import com.virjar.hermes.hermesagent.host.manager.AgentWatchTask;
+import com.virjar.hermes.hermesagent.host.manager.DynamicRateLimitManager;
 import com.virjar.hermes.hermesagent.host.manager.LoggerTimerTask;
 import com.virjar.hermes.hermesagent.host.manager.ReportTask;
 import com.virjar.hermes.hermesagent.util.CommonUtils;
@@ -295,6 +296,21 @@ public class FontService extends Service {
         public List<String> onlineService() {
             return Lists.newArrayList(onlineAgentServices());
         }
+
+        @Override
+        public void notifyPingDuration(long duration) throws RemoteException {
+            DynamicRateLimitManager.getInstance().recordPingDuration(duration);
+        }
+
+        @Override
+        public void notifyPingFailed() throws RemoteException {
+            DynamicRateLimitManager.getInstance().recordPingFailed();
+        }
+
+        @Override
+        public double systemScore() throws RemoteException {
+            return DynamicRateLimitManager.getInstance().getLimitScore();
+        }
     };
 
     public IHookAgentService findHookAgent(String serviceName) {
@@ -471,7 +487,9 @@ public class FontService extends Service {
                 try {
                     //如果targetApp假死，那么这个调用将会阻塞，需要监控这个任务的执行时间，如果长时间ping没有响应，那么需要强杀targetApp
                     pingWatchTaskLinkedBlockingDeque.offer(pingWatchTask);
+                    long start = System.currentTimeMillis();
                     daemonBinderCopy.ping();
+                    DynamicRateLimitManager.getInstance().recordPingDuration(System.currentTimeMillis() - start);
                 } catch (DeadObjectException deadObjectException) {
                     log.error("remote service dead,wait for re register");
                     daemonBinder = null;
@@ -491,7 +509,7 @@ public class FontService extends Service {
             //重启之后，马上进行上报
             reportTask = new ReportTask(this, this);
             timer.scheduleAtFixedRate(reportTask,
-                    1, 60000);
+                    1, 30000);
             //监控所有agent状态
             timer.scheduleAtFixedRate(new AgentWatchTask(this, allRemoteHookService, this), 1000, 30000);
         }

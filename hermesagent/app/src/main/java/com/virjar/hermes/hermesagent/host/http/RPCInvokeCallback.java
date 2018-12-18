@@ -23,6 +23,7 @@ import com.virjar.hermes.hermesagent.hermes_api.APICommonUtils;
 import com.virjar.hermes.hermesagent.hermes_api.aidl.IHookAgentService;
 import com.virjar.hermes.hermesagent.hermes_api.aidl.InvokeRequest;
 import com.virjar.hermes.hermesagent.hermes_api.aidl.InvokeResult;
+import com.virjar.hermes.hermesagent.host.manager.DynamicRateLimitManager;
 import com.virjar.hermes.hermesagent.host.service.FontService;
 import com.virjar.hermes.hermesagent.host.thread.J2Executor;
 import com.virjar.hermes.hermesagent.util.CommonUtils;
@@ -37,8 +38,6 @@ import java.net.URLEncoder;
 import java.util.Map;
 
 import javax.annotation.Nullable;
-
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by virjar on 2018/8/24.<br>
@@ -64,6 +63,11 @@ public class RPCInvokeCallback implements HttpServerRequestCallback {
                     CommonUtils.deviceID(fontService) + " ,ip:" + APICommonUtils.getLocalIp() + "}"));
             return;
         }
+        if (DynamicRateLimitManager.getInstance().limited()) {
+            log.warn("rate limited by DynamicRateLimitManager");
+            CommonUtils.sendJSON(response, CommonRes.failed(Constant.status_rate_limited, "rate limited by DynamicRateLimitManager"));
+            return;
+        }
         Map<String, String> innerParam = determineInnerParam(request);
         final String invokePackage = innerParam.get(Constant.invokePackage);
         if (StringUtils.isBlank(invokePackage)) {
@@ -84,7 +88,7 @@ public class RPCInvokeCallback implements HttpServerRequestCallback {
             CommonUtils.sendJSON(response, CommonRes.failed("unknown request data format"));
             return;
         }
-        new J2ExecutorWrapper(j2Executor.getOrCreate(invokePackage, 2, 4),
+        new J2ExecutorWrapper(j2Executor.getOrCreate(invokePackage, 5, 5),
                 new Runnable() {
                     @Override
                     public void run() {
@@ -104,6 +108,7 @@ public class RPCInvokeCallback implements HttpServerRequestCallback {
                                 CommonUtils.sendJSON(response, CommonRes.failed(invokeResult.getStatus(), invokeResult.getTheData()));
                                 return;
                             }
+                            DynamicRateLimitManager.getInstance().recordInvokeSuccess();
                             if (invokeResult.getDataType() == InvokeResult.dataTypeJson) {
                                 CommonUtils.sendJSON(response, CommonRes.success(JSON.parse(invokeResult.getTheData())));
                             } else {
